@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, MessageSquare, Leaf, BookOpen, CloudSun,
   TrendingUp, Droplets, FlaskConical, User, Settings,
-  Sprout, ChevronRight, Menu, X, Bell, Search, LogOut
+  Sprout, ChevronRight, Menu, X, Bell, Search, LogOut, CalendarDays
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
@@ -19,8 +19,7 @@ const navItems = [
   { path: '/crop-guide', label: 'Crop Guide', icon: BookOpen },
   { path: '/weather', label: 'Weather', icon: CloudSun },
   { path: '/market', label: 'Market Prices', icon: TrendingUp },
-  { path: '/irrigation', label: 'Irrigation', icon: Droplets },
-  { path: '/fertilizer', label: 'Fertilizer', icon: FlaskConical },
+  { path: '/planner', label: 'Farming Planner', icon: CalendarDays },
   { path: '/profile', label: 'Profile', icon: User },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
