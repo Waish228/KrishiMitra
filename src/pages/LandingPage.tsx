@@ -460,7 +460,7 @@ const LandingPage: React.FC = () => {
             Empowering Indian farmers with AI-powered insights for better yields and sustainable farming.
           </p>
           <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between text-sm text-slate-400">
-            <p>© 2024 KrishiMitra AI. All rights reserved.</p>
+            <p>© 2026 KrishiMitra AI. All rights reserved.</p>
             <div className="flex gap-6 mt-4 sm:mt-0">
               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
