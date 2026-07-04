@@ -16,7 +16,7 @@ export async function* streamChatResponse(
   language: SupportedLanguage
 ): AsyncGenerator<string, void, unknown> {
   const systemInstruction = getSystemPrompt(language);
-  
+
   // Convert our internal Message format to Gemini's format
   const contents = messageHistory.map(msg => ({
     role: msg.role === 'assistant' ? 'model' : 'user',
@@ -94,10 +94,12 @@ You MUST return your response as a raw JSON object with NO markdown formatting, 
       // (The chat still runs strictly on Gemma 4)
       model: 'gemini-2.5-flash',
       contents: [
-        { role: 'user', parts: [
-          { text: prompt },
-          { inlineData: { data: base64Image.split(',')[1] || base64Image, mimeType } }
-        ]}
+        {
+          role: 'user', parts: [
+            { text: prompt },
+            { inlineData: { data: base64Image.split(',')[1] || base64Image, mimeType } }
+          ]
+        }
       ],
       config: {
         temperature: 0.2, // Low temp for more factual/structured response
@@ -105,16 +107,16 @@ You MUST return your response as a raw JSON object with NO markdown formatting, 
     });
 
     const text = response.text || '';
-    
+
     // Extract strictly the JSON part (everything from the first { to the last })
     const jsonStart = text.indexOf('{');
     const jsonEnd = text.lastIndexOf('}');
-    
+
     if (jsonStart === -1 || jsonEnd === -1) {
       console.error('Failed to find JSON in response:', text);
       throw new Error('AI returned an invalid format. Please try again.');
     }
-    
+
     const jsonString = text.substring(jsonStart, jsonEnd + 1);
     return JSON.parse(jsonString) as DiseaseDetectionResult;
   } catch (error: any) {
@@ -123,3 +125,37 @@ You MUST return your response as a raw JSON object with NO markdown formatting, 
   }
 }
 
+export async function* generateWeatherAdvisory(
+  weatherContext: string,
+  language: SupportedLanguage = 'English'
+): AsyncGenerator<string, void, unknown> {
+  const prompt = `You are an expert agricultural AI. Based on the following weather forecast for today, explain exactly what the farmer should do today.
+Provide actionable, practical farming advice (e.g., whether to irrigate, spray pesticides, harvest, or avoid field work).
+Keep the advice concise, within 3-4 short bullet points or a brief paragraph.
+Respond entirely in ${language}.
+
+Weather Context:
+${weatherContext}
+`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: AI_CONFIG.primaryModel,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        temperature: 0.5,
+      }
+    });
+
+    if (response.text) {
+      const words = response.text.split(' ');
+      for (const word of words) {
+        yield word + ' ';
+        await new Promise(r => setTimeout(r, 10));
+      }
+    }
+  } catch (error: any) {
+    console.error('Error generating weather advisory:', error);
+    yield `**System Error:** Could not generate advisory. Please try again later.\n\n_Technical detail: ${error.message}_`;
+  }
+}
