@@ -1,8 +1,13 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+
+// Pages
 import LandingPage from './pages/LandingPage';
+import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import AIChatPage from './pages/AIChatPage';
 import DiseaseDetectionPage from './pages/DiseaseDetectionPage';
@@ -14,110 +19,50 @@ import FertilizerPlannerPage from './pages/FertilizerPlannerPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 
+// Helper to wrap an element with Layout + ProtectedRoute
+const Protected = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute>
+    <Layout>{children}</Layout>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <ThemeProvider>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          className: 'text-sm font-medium',
-          style: {
-            borderRadius: '12px',
-            background: 'var(--toast-bg)',
-            color: 'var(--toast-color)',
-          },
-          duration: 3000,
-        }}
-      />
-      <Routes>
-        {/* Landing Page - no layout */}
-        <Route path="/" element={<LandingPage />} />
+      <AuthProvider>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            className: 'text-sm font-medium',
+            style: {
+              borderRadius: '12px',
+              background: 'var(--toast-bg, #fff)',
+              color: 'var(--toast-color, #1f2937)',
+            },
+            duration: 3500,
+          }}
+        />
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/auth" element={<AuthPage />} />
 
-        {/* App pages with layout */}
-        <Route
-          path="/dashboard"
-          element={
-            <Layout>
-              <Dashboard />
-            </Layout>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <Layout>
-              <AIChatPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/disease"
-          element={
-            <Layout>
-              <DiseaseDetectionPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/crop-guide"
-          element={
-            <Layout>
-              <CropGuidePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/weather"
-          element={
-            <Layout>
-              <WeatherPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/market"
-          element={
-            <Layout>
-              <MarketPricesPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/irrigation"
-          element={
-            <Layout>
-              <IrrigationPlannerPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/fertilizer"
-          element={
-            <Layout>
-              <FertilizerPlannerPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <Layout>
-              <ProfilePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <Layout>
-              <SettingsPage />
-            </Layout>
-          }
-        />
+          {/* Protected app routes */}
+          <Route path="/dashboard"  element={<Protected><Dashboard /></Protected>} />
+          <Route path="/chat"       element={<Protected><AIChatPage /></Protected>} />
+          <Route path="/disease"    element={<Protected><DiseaseDetectionPage /></Protected>} />
+          <Route path="/crop-guide" element={<Protected><CropGuidePage /></Protected>} />
+          <Route path="/weather"    element={<Protected><WeatherPage /></Protected>} />
+          <Route path="/market"     element={<Protected><MarketPricesPage /></Protected>} />
+          <Route path="/irrigation" element={<Protected><IrrigationPlannerPage /></Protected>} />
+          <Route path="/fertilizer" element={<Protected><FertilizerPlannerPage /></Protected>} />
+          <Route path="/profile"    element={<Protected><ProfilePage /></Protected>} />
+          <Route path="/settings"   element={<Protected><SettingsPage /></Protected>} />
 
-        {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

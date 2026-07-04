@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, MessageSquare, Leaf, BookOpen, CloudSun,
   TrendingUp, Droplets, FlaskConical, User, Settings,
-  Sprout, ChevronRight, Menu, X, Bell, Search
+  Sprout, ChevronRight, Menu, X, Bell, Search, LogOut
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
 
 const navItems = [
@@ -35,11 +37,79 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+// ─── Helper: user initials avatar ────────────────────────────────────────────
+const UserAvatar: React.FC<{ name?: string; avatarUrl?: string | null; size?: 'sm' | 'md' }> = ({
+  name, avatarUrl, size = 'md'
+}) => {
+  const initials = name
+    ? name.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : 'KM';
+  const sizeClass = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-9 h-9 text-sm';
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name ?? 'User'}
+        className={`${sizeClass} rounded-full object-cover flex-shrink-0`}
+      />
+    );
+  }
+  return (
+    <div className={`${sizeClass} rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0`}>
+      <span className="font-bold text-white">{initials}</span>
+    </div>
+  );
+};
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
 
   const currentPage = navItems.find(item => item.path === location.pathname);
+
+  const displayName = profile?.full_name ?? 'Farmer';
+  const subtitle = profile
+    ? [profile.district, profile.state].filter(Boolean).join(', ') || 'KrishiMitra User'
+    : 'Loading...';
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Signed out successfully');
+      navigate('/auth');
+    } catch {
+      toast.error('Failed to sign out');
+    }
+  };
+
+  // ─── User info panel (reused in both sidebars) ──────────────────────────
+  const UserPanel = () => (
+    <div className="p-4 border-t border-gray-100 dark:border-slate-700">
+      <NavLink
+        to="/profile"
+        className="flex items-center gap-3 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+        onClick={() => setSidebarOpen(false)}
+        id="user-profile-link"
+      >
+        <UserAvatar name={displayName} avatarUrl={profile?.avatar_url} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{displayName}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{subtitle}</p>
+        </div>
+      </NavLink>
+      <button
+        onClick={handleSignOut}
+        className="flex items-center gap-2 w-full mt-2 px-3 py-2 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+        id="sidebar-signout-btn"
+      >
+        <LogOut className="w-4 h-4" />
+        Sign Out
+      </button>
+    </div>
+  );
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-slate-900">
@@ -72,7 +142,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white'
                 )}
               >
-                <Icon className={cn('w-5 h-5 flex-shrink-0 transition-transform duration-200', 
+                <Icon className={cn('w-5 h-5 flex-shrink-0 transition-transform duration-200',
                   'group-hover:scale-110',
                   isActive ? 'text-primary-600 dark:text-primary-400' : ''
                 )} />
@@ -83,18 +153,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           })}
         </nav>
 
-        {/* Bottom section */}
-        <div className="p-4 border-t border-gray-100 dark:border-slate-700">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-white">RS</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">Ramesh Singh</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Wheat Farmer, UP</p>
-            </div>
-          </div>
-        </div>
+        <UserPanel />
       </aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -156,17 +215,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 })}
               </nav>
 
-              <div className="p-4 border-t border-gray-100 dark:border-slate-700">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-white">RS</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Ramesh Singh</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Wheat Farmer, UP</p>
-                  </div>
-                </div>
-              </div>
+              <UserPanel />
             </motion.aside>
           </>
         )}
@@ -207,9 +256,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               id="notifications-btn"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
             </button>
             <ThemeToggle />
+            {/* Mobile avatar */}
+            <div className="lg:hidden">
+              <UserAvatar name={displayName} avatarUrl={profile?.avatar_url} size="sm" />
+            </div>
           </div>
         </header>
 

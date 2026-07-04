@@ -5,8 +5,11 @@ import {
   ChevronRight, Info, Trash2, LogOut,
   Volume2, Wifi, Database, HelpCircle, Star
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { Card, PageHeader, Badge } from '../components/ui/Components';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
 
 interface SettingItemProps {
@@ -66,6 +69,8 @@ const Toggle2: React.FC<{ checked: boolean; onChange: (v: boolean) => void; id?:
 
 const SettingsPage: React.FC = () => {
   const { theme, toggleTheme, isDark } = useTheme();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
     notifications: true,
     weatherAlerts: true,
@@ -278,7 +283,15 @@ const SettingsPage: React.FC = () => {
             icon={<LogOut className="w-4 h-4" />}
             label="Sign Out"
             danger
-            onClick={() => {}}
+            onClick={async () => {
+              try {
+                await signOut();
+                toast.success('Signed out successfully');
+                navigate('/auth');
+              } catch {
+                toast.error('Failed to sign out');
+              }
+            }}
             id="signout-btn"
           />
           <SettingItem

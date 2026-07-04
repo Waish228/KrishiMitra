@@ -4,7 +4,10 @@ import {
   User, MapPin, Phone, Mail, Camera, Award,
   Leaf, TrendingUp, Droplets, Edit2, Check, Star
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { Card, PageHeader, Badge, Button } from '../components/ui/Components';
+import { useAuth } from '../contexts/AuthContext';
+import { updateProfile } from '../api/users';
 
 const achievements = [
   { icon: '🏆', title: 'Early Adopter', desc: 'Joined in first 100 users', earned: true },
@@ -22,26 +25,60 @@ const farmHistory = [
 ];
 
 const ProfilePage: React.FC = () => {
+  const { profile: authProfile, user, refreshProfile } = useAuth();
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'farm' | 'achievements' | 'history'>('farm');
 
-  const profile = {
-    name: 'Ramesh Singh',
-    village: 'Ramnagar Village',
-    district: 'Lucknow',
-    state: 'Uttar Pradesh',
-    phone: '+91 98765 43210',
-    email: 'ramesh.singh@gmail.com',
-    farmArea: '6.7 acres',
-    soilType: 'Alluvial / Loamy',
-    primaryCrops: 'Wheat, Mustard, Tomato',
-    experience: '15 years',
-    kccNumber: 'KCC-LKO-2024-0981',
-    memberSince: 'March 2024',
+  // Local form state (editable fields)
+  const [formData, setFormData] = useState({
+    full_name: authProfile?.full_name ?? '',
+    phone: authProfile?.phone ?? '',
+    farm_name: authProfile?.farm_name ?? '',
+    farm_area_acres: authProfile?.farm_area_acres?.toString() ?? '',
+    soil_type: authProfile?.soil_type ?? '',
+    primary_crops: authProfile?.primary_crops?.join(', ') ?? '',
+    village: authProfile?.village ?? '',
+    district: authProfile?.district ?? '',
+    state: authProfile?.state ?? '',
+    kcc_number: authProfile?.kcc_number ?? '',
+    farming_experience_years: authProfile?.farming_experience_years?.toString() ?? '',
+  });
+
+  const handleSave = async () => {
+    if (!authProfile?.id) return;
+    setSaving(true);
+    try {
+      await updateProfile(authProfile.id, {
+        full_name: formData.full_name,
+        phone: formData.phone || null,
+        farm_name: formData.farm_name || null,
+        farm_area_acres: formData.farm_area_acres ? Number(formData.farm_area_acres) : null,
+        soil_type: formData.soil_type || null,
+        primary_crops: formData.primary_crops ? formData.primary_crops.split(',').map(s => s.trim()) : null,
+        village: formData.village || null,
+        district: formData.district || null,
+        state: formData.state || null,
+        kcc_number: formData.kcc_number || null,
+        farming_experience_years: formData.farming_experience_years ? Number(formData.farming_experience_years) : null,
+      });
+      await refreshProfile();
+      toast.success('Profile saved! ✅');
+      setEditing(false);
+    } catch {
+      toast.error('Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
+  const displayName = authProfile?.full_name ?? user?.email?.split('@')[0] ?? 'Farmer';
+  const memberSince = authProfile?.created_at
+    ? new Date(authProfile.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+    : 'Recently';
+
   const stats = [
-    { label: 'Seasons', value: '12', icon: Leaf },
+    { label: 'Farm Area', value: authProfile?.farm_area_acres ? `${authProfile.farm_area_acres} ac` : '--', icon: Leaf },
     { label: 'AI Chats', value: '89', icon: TrendingUp },
     { label: 'Scans Done', value: '34', icon: Droplets },
   ];
@@ -55,10 +92,11 @@ const ProfilePage: React.FC = () => {
           <Button
             variant={editing ? 'primary' : 'secondary'}
             icon={editing ? <Check className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-            onClick={() => setEditing(!editing)}
+            onClick={editing ? handleSave : () => setEditing(true)}
+            disabled={saving}
             id="edit-profile-btn"
           >
-            {editing ? 'Save Changes' : 'Edit Profile'}
+            {saving ? 'Saving...' : editing ? 'Save Changes' : 'Edit Profile'}
           </Button>
         }
       />
@@ -68,8 +106,12 @@ const ProfilePage: React.FC = () => {
         <Card className="p-6 bg-card-gradient-green text-white">
           <div className="flex items-start gap-4">
             <div className="relative flex-shrink-0">
-              <div className="w-20 h-20 rounded-2xl bg-white/20 flex items-center justify-center shadow-lg">
-                <span className="text-3xl font-bold">RS</span>
+              <div className="w-20 h-20 rounded-2xl bg-white/20 flex items-center justify-center shadow-lg overflow-hidden">
+                {authProfile?.avatar_url ? (
+                  <img src={authProfile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl font-bold">{displayName.slice(0, 2).toUpperCase()}</span>
+                )}
               </div>
               <button className="absolute -bottom-1 -right-1 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md">
                 <Camera className="w-3.5 h-3.5 text-gray-600" />
@@ -77,14 +119,14 @@ const ProfilePage: React.FC = () => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-2xl font-bold font-display">{profile.name}</h2>
+                <h2 className="text-2xl font-bold font-display">{displayName}</h2>
                 <Badge className="bg-white/20 text-white border-0">Verified Farmer ✓</Badge>
               </div>
               <p className="text-white/70 text-sm mt-1 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5" />
-                {profile.village}, {profile.district}, {profile.state}
+                {[authProfile?.village, authProfile?.district, authProfile?.state].filter(Boolean).join(', ') || 'Location not set'}
               </p>
-              <p className="text-white/60 text-xs mt-1">Member since {profile.memberSince}</p>
+              <p className="text-white/60 text-xs mt-1">Member since {memberSince}</p>
             </div>
           </div>
 
@@ -127,36 +169,45 @@ const ProfilePage: React.FC = () => {
       >
         {activeTab === 'farm' && (
           <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              { label: 'Full Name', value: profile.name, icon: User },
-              { label: 'Phone Number', value: profile.phone, icon: Phone },
-              { label: 'Email Address', value: profile.email, icon: Mail },
-              { label: 'Farm Location', value: `${profile.village}, ${profile.district}`, icon: MapPin },
-              { label: 'Total Farm Area', value: profile.farmArea, icon: Leaf },
-              { label: 'Soil Type', value: profile.soilType, icon: Leaf },
-              { label: 'Primary Crops', value: profile.primaryCrops, icon: Leaf },
-              { label: 'Farming Experience', value: profile.experience, icon: Award },
-              { label: 'KCC Number', value: profile.kccNumber, icon: Award },
-            ].map((field) => (
-              <Card key={field.label} className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <field.icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+            {([
+              { label: 'Full Name', key: 'full_name', icon: User, type: 'text' },
+              { label: 'Phone Number', key: 'phone', icon: Phone, type: 'tel' },
+              { label: 'Email Address', key: '_email', icon: Mail, type: 'email' },
+              { label: 'Village', key: 'village', icon: MapPin, type: 'text' },
+              { label: 'District', key: 'district', icon: MapPin, type: 'text' },
+              { label: 'State', key: 'state', icon: MapPin, type: 'text' },
+              { label: 'Farm Area (acres)', key: 'farm_area_acres', icon: Leaf, type: 'number' },
+              { label: 'Soil Type', key: 'soil_type', icon: Leaf, type: 'text' },
+              { label: 'Primary Crops', key: 'primary_crops', icon: Leaf, type: 'text' },
+              { label: 'Experience (years)', key: 'farming_experience_years', icon: Award, type: 'number' },
+              { label: 'KCC Number', key: 'kcc_number', icon: Award, type: 'text' },
+            ] as const).map((field) => {
+              const value = field.key === '_email'
+                ? (user?.email ?? '--')
+                : (formData as Record<string, string>)[field.key] ?? '--';
+              return (
+                <Card key={field.label} className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-primary-50 dark:bg-primary-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <field.icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-400 mb-0.5">{field.label}</p>
+                      {editing && field.key !== '_email' ? (
+                        <input
+                          type={field.type}
+                          value={(formData as Record<string, string>)[field.key] ?? ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
+                          className="w-full text-sm font-medium text-gray-900 dark:text-white bg-transparent border-b border-primary-400 focus:outline-none pb-0.5"
+                        />
+                      ) : (
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{value || '--'}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-400 mb-0.5">{field.label}</p>
-                    {editing ? (
-                      <input
-                        defaultValue={field.value}
-                        className="w-full text-sm font-medium text-gray-900 dark:text-white bg-transparent border-b border-primary-400 focus:outline-none pb-0.5"
-                      />
-                    ) : (
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{field.value}</p>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
 
