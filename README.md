@@ -15,7 +15,9 @@
 
 ## 📸 Hero Image
 
-![KrishiMitra Banner](https://krishimitra-50ce5.web.app/favicon.svg)
+<div align="center">
+  <img src="https://krishimitra-50ce5.web.app/favicon.svg" width="96" alt="KrishiMitra Brand Logo" />
+</div>
 
 *(Custom dashboard banners and screenshots are stored in the [README_ASSETS/screenshots/](file:///d:/OLD%20PC/Program/KishanSathi/README_ASSETS/screenshots/) folder.)*
 
@@ -109,18 +111,19 @@ Smallholder and regional farmers in developing markets face significant barriers
 
 ## 📸 Screenshots
 
-| Page / Section | Screenshot Placeholder |
+| Page / Section | Screenshot |
 | :--- | :--- |
-| **Landing Page** | `[README_ASSETS/screenshots/landing_page.png]` |
-| **Dashboard** | `[README_ASSETS/screenshots/dashboard.png]` |
-| **AI Chat & Voice** | `[README_ASSETS/screenshots/ai_chat.png]` |
-| **Disease Detection** | `[README_ASSETS/screenshots/disease_detection.png]` |
-| **Crop Guide** | `[README_ASSETS/screenshots/crop_guide.png]` |
-| **Weather & Advisory** | `[README_ASSETS/screenshots/weather.png]` |
-| **Market Prices** | `[README_ASSETS/screenshots/market_prices.png]` |
-| **Farming Planner** | `[README_ASSETS/screenshots/farming_planner.png]` |
-| **Profile & Stats** | `[README_ASSETS/screenshots/profile.png]` |
-| **Settings (Language/Theme)**| `[README_ASSETS/screenshots/settings.png]` |
+| **Landing Page** | ![Landing Page](README_ASSETS/screenshots/landing.png) |
+| **Authentication** | ![Authentication](README_ASSETS/screenshots/auth.png) |
+| **Dashboard** | ![Dashboard](README_ASSETS/screenshots/dashboard.png) |
+| **AI Chat & Voice** | ![AI Chat](README_ASSETS/screenshots/chat.png) |
+| **Disease Detection** | ![Disease Detection](README_ASSETS/screenshots/disease.png) |
+| **Crop Guide** | ![Crop Guide](README_ASSETS/screenshots/crop-guide.png) |
+| **Weather & Advisory** | ![Weather](README_ASSETS/screenshots/weather.png) |
+| **Farming Planner** | ![Farming Planner](README_ASSETS/screenshots/planner.png) |
+| **Smart Reminders** | ![Reminders](README_ASSETS/screenshots/reminders.png) |
+| **Profile & Stats** | ![Profile](README_ASSETS/screenshots/profile.png) |
+| **Settings (Language/Theme)**| ![Settings](README_ASSETS/screenshots/settings.png) |
 
 ---
 
