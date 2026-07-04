@@ -18,6 +18,7 @@ const navItems = [
   { path: '/disease', label: 'Disease Detection', icon: Leaf },
   { path: '/crop-guide', label: 'Crop Guide', icon: BookOpen },
   { path: '/weather', label: 'Weather', icon: CloudSun },
+  { path: '/reminders', label: 'Smart Reminders', icon: Bell },
   { path: '/market', label: 'Market Prices', icon: TrendingUp },
   { path: '/planner', label: 'Farming Planner', icon: CalendarDays },
   { path: '/profile', label: 'Profile', icon: User },

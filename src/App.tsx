@@ -15,6 +15,7 @@ import DiseaseDetectionPage from './pages/DiseaseDetectionPage';
 import CropGuidePage from './pages/CropGuidePage';
 import WeatherPage from './pages/WeatherPage';
 import MarketPricesPage from './pages/MarketPricesPage';
+import RemindersPage from './pages/RemindersPage';
 import FarmingPlannerPage from './pages/FarmingPlannerPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
@@ -54,6 +55,7 @@ function App() {
             <Route path="/disease"    element={<Protected><DiseaseDetectionPage /></Protected>} />
             <Route path="/crop-guide" element={<Protected><CropGuidePage /></Protected>} />
             <Route path="/weather"    element={<Protected><WeatherPage /></Protected>} />
+            <Route path="/reminders"  element={<Protected><RemindersPage /></Protected>} />
             <Route path="/market"     element={<Protected><MarketPricesPage /></Protected>} />
             <Route path="/planner"    element={<Protected><FarmingPlannerPage /></Protected>} />
             <Route path="/profile"    element={<Protected><ProfilePage /></Protected>} />
