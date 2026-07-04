@@ -522,11 +522,11 @@ export default function AIChatPage() {
                                                         <Volume2 className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                <button 
+                                                <button
                                                     onClick={() => { console.log('ThumbsUp clicked'); handleFeedback(message.id, 'up'); }}
                                                     className={cn(
                                                         "p-2 rounded transition-all cursor-pointer",
-                                                        messageFeedback[message.id] === 'up' 
+                                                        messageFeedback[message.id] === 'up'
                                                             ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
                                                             : "hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-400 hover:text-green-500"
                                                     )}
@@ -534,11 +534,11 @@ export default function AIChatPage() {
                                                 >
                                                     <ThumbsUp className="w-4 h-4" />
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => { console.log('ThumbsDown clicked'); handleFeedback(message.id, 'down'); }}
                                                     className={cn(
                                                         "p-2 rounded transition-all cursor-pointer",
-                                                        messageFeedback[message.id] === 'down' 
+                                                        messageFeedback[message.id] === 'down'
                                                             ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
                                                             : "hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-400 hover:text-red-500"
                                                     )}

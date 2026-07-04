@@ -6,9 +6,9 @@ import { toast } from 'react-hot-toast';
 // Multiple fallbacks per language in priority order
 const LANGUAGE_VOICE_CODES: Record<SupportedLanguage, string[]> = {
   English: ['en-IN', 'en-US', 'en-GB', 'en'],
-  Hindi:   ['hi-IN', 'hi'],
+  Hindi: ['hi-IN', 'hi'],
   Bengali: ['bn-IN', 'bn-BD', 'bn'],
-  Odia:    ['or-IN', 'hi-IN', 'hi'],  // Odia not widely available, falls back to Hindi
+  Odia: ['or-IN', 'hi-IN', 'hi'],  // Odia not widely available, falls back to Hindi
 };
 
 /** Find the best matching SpeechSynthesis voice for a given language. */
@@ -30,7 +30,7 @@ function findBestVoice(language: SupportedLanguage): SpeechSynthesisVoice | null
     const match = voices.find(v => v.lang.toLowerCase().startsWith(prefix));
     if (match) return match;
   }
-  
+
   // Try matching the language name itself in the voice name (e.g. "Hindi" inside "Microsoft Swara - Hindi")
   const langName = language.toLowerCase();
   const nameMatch = voices.find(v => v.name.toLowerCase().includes(langName));
@@ -109,9 +109,9 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
           console.log('TTS could not find a specific voice, using default browser voice.');
         }
 
-        utterance.lang   = LANGUAGE_VOICE_CODES[language]?.[0] || 'en-US';
-        utterance.rate   = 1.0;
-        utterance.pitch  = 1.0;
+        utterance.lang = LANGUAGE_VOICE_CODES[language]?.[0] || 'en-US';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
         utterance.onstart = () => {
@@ -137,11 +137,11 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
         };
 
         utteranceRef.current = utterance;
-        
+
         try {
-            window.speechSynthesis.speak(utterance);
+          window.speechSynthesis.speak(utterance);
         } catch (err: any) {
-            toast.error(`Speech failed: ${err.message}`, { id: 'tts-toast' });
+          toast.error(`Speech failed: ${err.message}`, { id: 'tts-toast' });
         }
       };
 
