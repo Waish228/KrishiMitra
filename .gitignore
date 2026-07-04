@@ -15,6 +15,7 @@ dist-ssr
 # Environment files with secrets
 .env
 .env.*
+final-checks.md
 
 # Editor directories and files
 .vscode/*

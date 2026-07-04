@@ -1,16 +1,23 @@
-import { collection, query, where, getDocs, addDoc, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
+// Removed orderBy from queries to avoid requiring Firestore composite indexes.
+// Sorting is done client-side instead, which works perfectly for this app.
+import { collection, query, where, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { Conversation, Message } from './types';
 
 export async function getConversations(userId: string): Promise<Conversation[]> {
+  // Simple filter by user_id only (no orderBy = no composite index needed)
   const q = query(
     collection(db, 'conversations'),
-    where('user_id', '==', userId),
-    orderBy('updated_at', 'desc')
+    where('user_id', '==', userId)
   );
   
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+  const conversations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+  
+  // Sort client-side: most recently updated first
+  return conversations.sort((a, b) =>
+    new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  );
 }
 
 export async function createConversation(userId: string, title?: string): Promise<Conversation> {
@@ -32,14 +39,19 @@ export async function createConversation(userId: string, title?: string): Promis
 }
 
 export async function getMessages(conversationId: string): Promise<Message[]> {
+  // Simple filter by conversation_id only (no orderBy = no composite index needed)
   const q = query(
     collection(db, 'messages'),
-    where('conversation_id', '==', conversationId),
-    orderBy('created_at', 'asc')
+    where('conversation_id', '==', conversationId)
   );
   
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+  const messages = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+  
+  // Sort client-side: oldest first (chronological chat order)
+  return messages.sort((a, b) =>
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
 }
 
 export async function addMessage(message: Omit<Message, 'id' | 'created_at'>): Promise<Message> {
