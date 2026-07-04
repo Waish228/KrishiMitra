@@ -10,6 +10,23 @@ const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY,
 });
 
+async function generateContentWithRetry(params: any, maxRetries = 5, delayMs = 800): Promise<any> {
+  let lastError: any = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await ai.models.generateContent(params);
+      return response;
+    } catch (error: any) {
+      console.warn(`Gemini API attempt ${attempt} failed:`, error);
+      lastError = error;
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+  }
+  throw lastError;
+}
+
 export async function* streamChatResponse(
   messageHistory: Message[],
   newMessage: string,
@@ -32,7 +49,7 @@ export async function* streamChatResponse(
   try {
     // Note: Using generateContent instead of generateContentStream here because
     // gemma-4-26b-a4b-it seems to be throwing 500 Internal Errors on the streaming endpoint.
-    const response = await ai.models.generateContent({
+    const response = await generateContentWithRetry({
       model: AI_CONFIG.primaryModel,
       contents: contents,
       config: {
@@ -113,7 +130,7 @@ You MUST return your response as a raw JSON object with NO markdown formatting, 
 }`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await generateContentWithRetry({
       model: AI_CONFIG.primaryModel,
       contents: [
         {
@@ -161,7 +178,7 @@ ${weatherContext}
 `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await generateContentWithRetry({
       model: AI_CONFIG.primaryModel,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
@@ -216,7 +233,7 @@ Provide your analysis in exactly 3 short bullet points:
 Respond entirely in ${language}. Keep it concise, actionable, and realistic.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await generateContentWithRetry({
       model: AI_CONFIG.primaryModel,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
@@ -309,7 +326,7 @@ Respond ONLY with a valid JSON object matching this exact structure, translated 
 DO NOT wrap the response in markdown blocks like \`\`\`json. Return RAW JSON.`;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await generateContentWithRetry({
       model: AI_CONFIG.primaryModel,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
