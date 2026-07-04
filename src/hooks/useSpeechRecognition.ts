@@ -6,8 +6,14 @@ export const LANGUAGE_TO_BCP47: Record<SupportedLanguage, string> = {
   English: 'en-IN',
   Hindi:   'hi-IN',
   Bengali: 'bn-IN',
-  Odia:    'or-IN',
 };
+
+declare global {
+  interface Window {
+    SpeechRecognition?: any;
+    webkitSpeechRecognition?: any;
+  }
+}
 
 export interface UseSpeechRecognitionReturn {
   isListening: boolean;
@@ -26,7 +32,7 @@ export function useSpeechRecognition(language: SupportedLanguage): UseSpeechReco
   const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError]                       = useState<string | null>(null);
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const langRef = useRef(language);
   langRef.current = language; // always fresh inside callbacks
 
@@ -49,7 +55,7 @@ export function useSpeechRecognition(language: SupportedLanguage): UseSpeechReco
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-    const recognition: SpeechRecognition = new SR();
+    const recognition = new SR();
 
     recognition.lang             = LANGUAGE_TO_BCP47[langRef.current];
     recognition.interimResults   = true;   // show what user is saying in real-time
@@ -63,7 +69,7 @@ export function useSpeechRecognition(language: SupportedLanguage): UseSpeechReco
       setError(null);
     };
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       let finalPart   = '';
       let interimPart = '';
 
@@ -80,7 +86,7 @@ export function useSpeechRecognition(language: SupportedLanguage): UseSpeechReco
       setInterimTranscript(interimPart);
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognition.onerror = (event: any) => {
       if (event.error === 'no-speech') {
         setError('No speech detected. Please try again.');
       } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
