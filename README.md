@@ -1,5 +1,9 @@
 # KrishiMitra AI - Smart Farming Companion
 
+<p align="center">
+  <img src="https://krishimitra-50ce5.web.app/favicon.svg" width="80" alt="KrishiMitra Brand Logo" />
+</p>
+
 > **Empowering Farmers with Voice-Driven Multilingual AI Intelligence**
 > 
 > Submitted to the **Kaggle Build with Gemma Kolkata Hackathon**
@@ -16,10 +20,8 @@
 ## 📸 Hero Image
 
 <div align="center">
-  <img src="https://krishimitra-50ce5.web.app/favicon.svg" width="96" alt="KrishiMitra Brand Logo" />
+  <img src="README_ASSETS/screenshots/landing.png" width="100%" alt="KrishiMitra Landing Page Banner" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);" />
 </div>
-
-*(Custom dashboard banners and screenshots are stored in the [README_ASSETS/screenshots/](file:///d:/OLD%20PC/Program/KishanSathi/README_ASSETS/screenshots/) folder.)*
 
 ---
 
