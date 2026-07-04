@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send, Mic, Sprout, Sparkles,
-  RotateCcw, Copy, ThumbsUp, ThumbsDown, MessageSquare, Plus, Menu, X
+  Send, Sprout, Sparkles,
+  RotateCcw, Copy, ThumbsUp, ThumbsDown, MessageSquare, Plus, Menu, X,
+  Mic, MicOff, Volume2, VolumeX, PhoneCall
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -13,13 +14,15 @@ import { useAuth } from '../contexts/AuthContext';
 import type { SupportedLanguage } from '../api/ai/prompts';
 import { streamChatResponse } from '../api/ai/client';
 import { AI_CONFIG } from '../api/ai/config';
-import { 
-  getConversations, 
-  createConversation, 
-  getMessages, 
-  addMessage 
+import {
+  getConversations,
+  createConversation,
+  getMessages,
+  addMessage
 } from '../api/conversations';
 import type { Conversation, Message } from '../api/types';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 
 const SUGGESTIONS = [
   '🌾 How do I treat wheat rust?',
@@ -34,45 +37,73 @@ const remarkPlugins = [remarkGfm];
 
 export default function AIChatPage() {
   const { user, profile } = useAuth();
-  
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+
+  const [conversations, setConversations]           = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  
-  const [isTyping, setIsTyping] = useState(false);
-  const [streamingContent, setStreamingContent] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>(
+  const [messages, setMessages]                     = useState<Message[]>([]);
+  const [input, setInput]                           = useState('');
+
+  const [isTyping, setIsTyping]                     = useState(false);
+  const [streamingContent, setStreamingContent]     = useState('');
+  const [selectedLanguage, setSelectedLanguage]     = useState<SupportedLanguage>(
     (profile?.preferred_language as SupportedLanguage) || 'English'
   );
-  
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(true);
 
+  const [sidebarOpen, setSidebarOpen]               = useState(false);
+  const [loadingHistory, setLoadingHistory]         = useState(true);
+
+  // ── Voice mode ──────────────────────────────────────────────────────────────
+  const [voiceMode, setVoiceMode]                   = useState(false);
+  const voiceModeRef = useRef(false); // ref for stale-closure-safe access inside callbacks
+  voiceModeRef.current = voiceMode;
+
+  const {
+    isListening, transcript, interimTranscript, error: sttError,
+    isSupported: sttSupported, startListening, stopListening, resetTranscript
+  } = useSpeechRecognition(selectedLanguage);
+
+  const { isSpeaking, speak, stop: stopSpeaking, isSupported: ttsSupported } =
+    useSpeechSynthesis();
+
+  const voiceSupported = sttSupported && ttsSupported;
+
+  // refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef    = useRef<HTMLTextAreaElement>(null);
+  const isSendingRef   = useRef(false); // prevents double-sends
 
-  // Load conversations on mount
+  // ── Data loading ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (user) {
-      loadConversations();
-    }
+    if (user) loadConversations();
   }, [user]);
 
-  // Load messages when active conversation changes
   useEffect(() => {
-    if (activeConversationId) {
-      loadMessages(activeConversationId);
-    } else {
-      setMessages([]);
-    }
+    if (activeConversationId) loadMessages(activeConversationId);
+    else setMessages([]);
   }, [activeConversationId]);
 
-  // Scroll to bottom on new messages or streaming content
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent, isTyping]);
 
+  // Show STT errors as toast
+  useEffect(() => {
+    if (sttError) toast.error(sttError);
+  }, [sttError]);
+
+  // ── Push-to-Talk: auto-send when recognition ends with a transcript ────────
+  useEffect(() => {
+    if (!isListening && transcript && !isSendingRef.current) {
+      isSendingRef.current = true;
+      handleSend(transcript).finally(() => {
+        isSendingRef.current = false;
+        resetTranscript();
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isListening, transcript]);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
   async function loadConversations() {
     if (!user) return;
     try {
@@ -103,8 +134,9 @@ export default function AIChatPage() {
     setSidebarOpen(false);
   };
 
-  const handleSend = async (text?: string) => {
-    const messageText = text || input.trim();
+  // ── Core send / AI call ────────────────────────────────────────────────────
+  const handleSend = useCallback(async (text?: string) => {
+    const messageText = (text ?? input).trim();
     if (!messageText || !user) return;
 
     setInput('');
@@ -113,56 +145,58 @@ export default function AIChatPage() {
 
     try {
       let convId = activeConversationId;
-      
-      // Create a new conversation if we don't have one
+
       if (!convId) {
-        const newTitle = messageText.length > 30 ? messageText.substring(0, 30) + '...' : messageText;
-        const newConv = await createConversation(user.uid, newTitle);
+        const newTitle = messageText.length > 30 ? messageText.substring(0, 30) + '…' : messageText;
+        const newConv  = await createConversation(user.uid, newTitle);
         setConversations(prev => [newConv, ...prev]);
         convId = newConv.id;
         setActiveConversationId(convId);
       }
 
-      // Add user message to UI immediately for snappiness, then save to DB
-      const userMessageObj: Omit<Message, 'id' | 'created_at'> = {
+      const userMsg: Omit<Message, 'id' | 'created_at'> = {
         conversation_id: convId,
         user_id: user.uid,
         role: 'user',
-        content: messageText
+        content: messageText,
       };
-      
-      // Save user message to Firebase
-      const savedUserMsg = await addMessage(userMessageObj);
+      const savedUserMsg = await addMessage(userMsg);
       setMessages(prev => [...prev, savedUserMsg]);
 
-      // Start streaming AI response
+      // Stream AI response
       const stream = streamChatResponse(messages, messageText, selectedLanguage);
-      
+
       let fullResponse = '';
       for await (const chunk of stream) {
         fullResponse += chunk;
         setStreamingContent(fullResponse);
       }
 
-      // Save assistant message to Firebase
-      const assistantMessageObj: Omit<Message, 'id' | 'created_at'> = {
+      const assistantMsg: Omit<Message, 'id' | 'created_at'> = {
         conversation_id: convId,
         user_id: user.uid,
         role: 'assistant',
-        content: fullResponse
+        content: fullResponse,
       };
-      
-      const savedAssistantMsg = await addMessage(assistantMessageObj);
-      
+      const savedAssistantMsg = await addMessage(assistantMsg);
       setMessages(prev => [...prev, savedAssistantMsg]);
+
+      // ── Auto-speak if voice mode is on ──────────────────────────────────
+      if (voiceModeRef.current && fullResponse) {
+        speak(fullResponse, selectedLanguage, () => {
+          // After AI finishes speaking, auto-listen for the next question
+          if (voiceModeRef.current) startListening();
+        });
+      }
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to get response from AI. Please try again.');
+      toast.error('Failed to get response. Please try again.');
     } finally {
       setIsTyping(false);
       setStreamingContent('');
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, user, activeConversationId, messages, selectedLanguage, speak, startListening]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -171,13 +205,37 @@ export default function AIChatPage() {
     }
   };
 
+  // ── Push-to-Talk controls ─────────────────────────────────────────────────
+  const handlePushToTalkStart = useCallback(() => {
+    if (isSpeaking) stopSpeaking(); // interrupt AI speech immediately
+    startListening();
+  }, [isSpeaking, stopSpeaking, startListening]);
+
+  const handlePushToTalkEnd = useCallback(() => {
+    stopListening(); // triggers onend → transcript → auto-send
+  }, [stopListening]);
+
+  // ── Toggle voice mode ─────────────────────────────────────────────────────
+  const toggleVoiceMode = useCallback(() => {
+    setVoiceMode(prev => {
+      if (prev) {
+        // turning OFF: stop any active speech/listen
+        stopSpeaking();
+        stopListening();
+        return false;
+      }
+      return true;
+    });
+  }, [stopSpeaking, stopListening]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-full max-h-[calc(100vh-130px)] lg:max-h-[calc(100vh-64px)] relative bg-white dark:bg-slate-900">
-      
-      {/* Sidebar Overlay (Mobile) */}
+
+      {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-20 lg:hidden"
             onClick={() => setSidebarOpen(false)}
@@ -185,7 +243,7 @@ export default function AIChatPage() {
         )}
       </AnimatePresence>
 
-      {/* History Sidebar */}
+      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
       <div className={cn(
         "absolute lg:static inset-y-0 left-0 w-72 bg-gray-50 dark:bg-slate-800/50 border-r border-gray-100 dark:border-slate-700 z-30 transform transition-transform duration-300 ease-in-out flex flex-col",
         sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
@@ -196,33 +254,29 @@ export default function AIChatPage() {
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <div className="p-3">
           <button
             onClick={handleNewChat}
             className="w-full flex items-center gap-2 px-3 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm"
           >
-            <Plus className="w-4 h-4" />
-            New Conversation
+            <Plus className="w-4 h-4" /> New Conversation
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
           {loadingHistory ? (
-            <div className="text-center py-4 text-sm text-gray-500">Loading history...</div>
+            <div className="text-center py-4 text-sm text-gray-500">Loading history…</div>
           ) : conversations.length === 0 ? (
             <div className="text-center py-4 text-sm text-gray-500">No past conversations</div>
           ) : (
             conversations.map(conv => (
               <button
                 key={conv.id}
-                onClick={() => {
-                  setActiveConversationId(conv.id);
-                  setSidebarOpen(false);
-                }}
+                onClick={() => { setActiveConversationId(conv.id); setSidebarOpen(false); }}
                 className={cn(
                   "w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                  activeConversationId === conv.id 
+                  activeConversationId === conv.id
                     ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
                     : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300"
                 )}
@@ -240,10 +294,10 @@ export default function AIChatPage() {
         </div>
       </div>
 
-      {/* Main Chat Area */}
+      {/* ── Main chat area ───────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* Chat Header */}
+
+        {/* Header */}
         <div className="px-4 py-3 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between shadow-sm z-10">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
@@ -260,8 +314,9 @@ export default function AIChatPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
+            {/* Language selector */}
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value as SupportedLanguage)}
@@ -271,35 +326,108 @@ export default function AIChatPage() {
                 <option key={lang} value={lang}>{lang}</option>
               ))}
             </select>
+
+            {/* Voice mode toggle */}
+            {voiceSupported && (
+              <button
+                onClick={toggleVoiceMode}
+                title={voiceMode ? 'Turn off voice mode' : 'Turn on voice mode'}
+                className={cn(
+                  "p-2 rounded-lg transition-all text-sm font-medium flex items-center gap-1.5",
+                  voiceMode
+                    ? "bg-primary-600 text-white shadow-md"
+                    : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
+                )}
+              >
+                <PhoneCall className="w-4 h-4" />
+                <span className="hidden sm:inline">{voiceMode ? 'Voice On' : 'Voice'}</span>
+              </button>
+            )}
+
             <button
               onClick={handleNewChat}
               className="hidden sm:flex p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-              title="Reset Chat"
+              title="New Chat"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Messages */}
+        {/* ── Listening / Speaking status bar ──────────────────────────────── */}
+        <AnimatePresence>
+          {(isListening || isSpeaking) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className={cn(
+                "flex items-center justify-between px-4 py-2 text-sm font-medium",
+                isListening
+                  ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+                  : "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+              )}>
+                <div className="flex items-center gap-2">
+                  {/* Animated voice bars */}
+                  <div className="flex items-end gap-0.5 h-4">
+                    {[0, 1, 2, 3].map(i => (
+                      <motion.span
+                        key={i}
+                        className={cn("w-1 rounded-full", isListening ? "bg-red-500" : "bg-primary-500")}
+                        animate={{ height: ['4px', '14px', '4px'] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                      />
+                    ))}
+                  </div>
+                  <span>
+                    {isListening
+                      ? (interimTranscript ? `"${interimTranscript}"` : 'Listening…')
+                      : 'Speaking…'
+                    }
+                  </span>
+                </div>
+
+                {/* Stop speaking button */}
+                {isSpeaking && (
+                  <button
+                    onClick={stopSpeaking}
+                    id="stop-speaking-btn"
+                    className="flex items-center gap-1.5 px-3 py-1 bg-primary-600 text-white rounded-full text-xs hover:bg-primary-700 transition-colors"
+                  >
+                    <VolumeX className="w-3 h-3" /> Stop
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Messages ─────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {messages.length === 0 && !isTyping ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-2xl flex items-center justify-center mb-4">
                 <Sparkles className="w-8 h-8 text-primary-600 dark:text-primary-400" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-display">How can I help your farm today?</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-display">
+                How can I help your farm today?
+              </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-8">
-                Ask me about crop diseases, weather forecasts, market prices, or general farming advice in your preferred language.
+                {voiceMode
+                  ? 'Voice mode is on. Hold the 🎤 button and speak your question.'
+                  : 'Ask me about crop diseases, weather, market prices, or farming advice in your preferred language.'
+                }
               </p>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                 {SUGGESTIONS.map((s, i) => (
                   <motion.button
+                    key={s}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    key={s}
                     onClick={() => handleSend(s)}
                     className="text-left text-sm bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 p-3 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all"
                   >
@@ -330,7 +458,7 @@ export default function AIChatPage() {
                     }
                   </div>
 
-                  {/* Message Bubble */}
+                  {/* Bubble */}
                   <div className={cn('max-w-[85%] sm:max-w-[75%] space-y-1 flex flex-col', message.role === 'user' ? 'items-end' : 'items-start')}>
                     <div className={cn(
                       'rounded-2xl px-4 py-3 text-sm leading-relaxed overflow-hidden',
@@ -349,11 +477,26 @@ export default function AIChatPage() {
                       )}
                     </div>
 
+                    {/* Action buttons (assistant only) */}
                     {message.role === 'assistant' && (
-                      <div className="flex items-center gap-2 px-1">
-                        <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Copy">
+                      <div className="flex items-center gap-1 px-1">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(message.content)}
+                          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          title="Copy"
+                        >
                           <Copy className="w-3 h-3" />
                         </button>
+                        {/* Re-read button (only if TTS supported) */}
+                        {ttsSupported && (
+                          <button
+                            onClick={() => speak(message.content, selectedLanguage)}
+                            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-primary-500 transition-colors"
+                            title="Read aloud"
+                          >
+                            <Volume2 className="w-3 h-3" />
+                          </button>
+                        )}
                         <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-green-500 transition-colors">
                           <ThumbsUp className="w-3 h-3" />
                         </button>
@@ -368,7 +511,7 @@ export default function AIChatPage() {
             </AnimatePresence>
           )}
 
-          {/* Streaming / Typing indicator */}
+          {/* Typing / streaming indicator */}
           {isTyping && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -378,7 +521,6 @@ export default function AIChatPage() {
               <div className="w-8 h-8 rounded-xl bg-card-gradient-green flex items-center justify-center flex-shrink-0 mt-1">
                 <Sprout className="w-4 h-4 text-white" />
               </div>
-              
               <div className="max-w-[85%] sm:max-w-[75%] bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                 {streamingContent ? (
                   <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1">
@@ -400,31 +542,79 @@ export default function AIChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 z-10">
+        {/* ── Input area ───────────────────────────────────────────────────── */}
+        <div className="p-3 sm:p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 z-10">
           <div className="flex items-end gap-2 max-w-4xl mx-auto">
             <div className="flex-1 relative">
               <textarea
                 ref={textareaRef}
-                value={input}
+                value={isListening && interimTranscript ? interimTranscript : input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask anything about farming..."
+                placeholder={isListening ? 'Listening…' : 'Ask anything about farming…'}
                 rows={1}
-                className="w-full px-4 py-3.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-sm transition-all"
+                readOnly={isListening}
+                className={cn(
+                  "w-full px-4 py-3.5 rounded-xl border bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-sm transition-all",
+                  isListening
+                    ? "border-red-400 dark:border-red-500 ring-2 ring-red-300 dark:ring-red-600"
+                    : "border-gray-200 dark:border-slate-600"
+                )}
                 style={{ minHeight: '52px', maxHeight: '120px' }}
               />
             </div>
+
             <div className="flex gap-2 mb-1">
-              <button
-                className="p-3 rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
-                title="Voice input"
-              >
-                <Mic className="w-5 h-5" />
-              </button>
+              {/* Push-to-Talk button */}
+              {voiceSupported && (
+                <motion.button
+                  id="push-to-talk-btn"
+                  onPointerDown={handlePushToTalkStart}
+                  onPointerUp={handlePushToTalkEnd}
+                  onPointerLeave={handlePushToTalkEnd}
+                  whileTap={{ scale: 0.9 }}
+                  title={
+                    !voiceMode
+                      ? 'Enable Voice Mode first'
+                      : isListening
+                      ? 'Release to send'
+                      : isSpeaking
+                      ? 'Tap to interrupt'
+                      : 'Hold to speak'
+                  }
+                  disabled={!voiceMode}
+                  className={cn(
+                    "p-3 rounded-xl transition-all select-none touch-none",
+                    !voiceMode
+                      ? "bg-gray-100 dark:bg-slate-700 text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                      : isListening
+                      ? "bg-red-500 text-white shadow-lg shadow-red-200 dark:shadow-red-900 ring-4 ring-red-300 dark:ring-red-700"
+                      : isSpeaking
+                      ? "bg-amber-400 text-white shadow-lg shadow-amber-200 dark:shadow-amber-900"
+                      : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 active:bg-red-100"
+                  )}
+                >
+                  {isSpeaking
+                    ? <MicOff className="w-5 h-5" />
+                    : isListening
+                    ? (
+                      <motion.span
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Infinity, duration: 0.8 }}
+                        className="flex"
+                      >
+                        <Mic className="w-5 h-5" />
+                      </motion.span>
+                    )
+                    : <Mic className="w-5 h-5" />
+                  }
+                </motion.button>
+              )}
+
+              {/* Send button */}
               <button
                 onClick={() => handleSend()}
-                disabled={!input.trim() || isTyping}
+                disabled={(!input.trim() && !transcript) || isTyping}
                 className="p-3 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                 id="send-message-btn"
               >
@@ -432,8 +622,12 @@ export default function AIChatPage() {
               </button>
             </div>
           </div>
+
           <p className="text-[10px] text-center text-gray-400 mt-3 max-w-xl mx-auto">
-            AI responses are for guidance only. Consult local agricultural experts for critical decisions before applying chemicals.
+            {voiceMode
+              ? '🎤 Voice mode active · Hold the mic button to speak · AI will reply aloud'
+              : 'AI responses are for guidance only. Consult local agricultural experts for critical decisions.'
+            }
           </p>
         </div>
       </div>
