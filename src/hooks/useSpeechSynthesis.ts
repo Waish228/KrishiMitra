@@ -2,13 +2,10 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { SupportedLanguage } from '../api/ai/prompts';
 import { toast } from 'react-hot-toast';
 
-// BCP-47 language codes for TTS voice matching
-// Multiple fallbacks per language in priority order
 const LANGUAGE_VOICE_CODES: Record<SupportedLanguage, string[]> = {
   English: ['en-IN', 'en-US', 'en-GB', 'en'],
   Hindi: ['hi-IN', 'hi'],
   Bengali: ['bn-IN', 'bn-BD', 'bn'],
-  Odia: ['or-IN', 'hi-IN', 'hi'],  // Odia not widely available, falls back to Hindi
 };
 
 /** Find the best matching SpeechSynthesis voice for a given language. */

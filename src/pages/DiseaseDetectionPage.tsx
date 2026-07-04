@@ -12,6 +12,7 @@ import { AI_CONFIG } from '../api/ai/config';
 import { analyzeCropImage, type DiseaseDetectionResult } from '../api/ai/client';
 import { saveDiseaseReport, getRecentDiseaseReports, type DiseaseReport } from '../api/disease';
 import type { SupportedLanguage } from '../api/ai/prompts';
+import { useTranslation } from 'react-i18next';
 
 const DiseaseDetectionPage: React.FC = () => {
   const { user, profile } = useAuth();
@@ -28,7 +29,13 @@ const DiseaseDetectionPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const userLanguage = (profile?.preferred_language as SupportedLanguage) || AI_CONFIG.defaultLanguage;
+  const { t, i18n } = useTranslation();
+  const getAI_Language = (code: string): SupportedLanguage => {
+    if (code.startsWith('hi')) return 'Hindi';
+    if (code.startsWith('bn')) return 'Bengali';
+    return 'English';
+  };
+  const userLanguage = getAI_Language(i18n.language);
 
   useEffect(() => {
     if (user) {

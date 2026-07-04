@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, BookOpen, Droplets, Sun, Thermometer, Clock, ChevronRight, X } from 'lucide-react';
 import { Card, Badge, PageHeader } from '../components/ui/Components';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface Crop {
     id: string;
@@ -92,6 +93,7 @@ const categories = ['All', 'Cereal', 'Vegetable', 'Oilseed', 'Cash Crop', 'Fiber
 const seasons = ['All', 'Kharif', 'Rabi', 'Annual', 'All Year'];
 
 const CropGuidePage: React.FC = () => {
+    const { t } = useTranslation();
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedSeason, setSelectedSeason] = useState('All');
@@ -114,9 +116,9 @@ const CropGuidePage: React.FC = () => {
     return (
         <div className="page-container">
             <PageHeader
-                title="Crop Guide"
-                subtitle="Encyclopedia of crops with growing tips"
-                action={<Badge variant="blue"><BookOpen className="w-3 h-3 mr-1" />{crops.length} Crops</Badge>}
+                title={t('nav.crop_guide', 'Crop Guide')}
+                subtitle={t('crop_guide.subtitle', 'Encyclopedia of crops with growing tips')}
+                action={<Badge variant="blue"><BookOpen className="w-3 h-3 mr-1" />{crops.length} {t('nav.crop_guide', 'Crops')}</Badge>}
             />
 
             <div className="grid lg:grid-cols-5 gap-6">
@@ -127,7 +129,7 @@ const CropGuidePage: React.FC = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search crops..."
+                            placeholder={t('crop_guide.search_placeholder', 'Search crops...')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="input-field pl-10"
@@ -147,7 +149,7 @@ const CropGuidePage: React.FC = () => {
                                         : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600'
                                 )}
                             >
-                                {cat}
+                                {cat === 'All' ? t('ui.all', 'All') : t('categories.' + cat.toLowerCase().replace(' ', '_'), cat)}
                             </button>
                         ))}
                     </div>
@@ -164,7 +166,7 @@ const CropGuidePage: React.FC = () => {
                                         : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600'
                                 )}
                             >
-                                {s}
+                                {s === 'All' ? t('ui.all', 'All') : t('seasons.' + s.toLowerCase().replace(' ', '_'), s)}
                             </button>
                         ))}
                     </div>
@@ -187,10 +189,10 @@ const CropGuidePage: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <span className="text-2xl">{crop.emoji}</span>
                                         <div>
-                                            <p className="font-semibold text-gray-900 dark:text-white text-sm">{crop.name}</p>
+                                            <p className="font-semibold text-gray-900 dark:text-white text-sm">{t('crops.' + crop.name.toLowerCase(), crop.name)}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
-                                                <Badge variant="gray">{crop.category}</Badge>
-                                                <span className="text-xs text-gray-400">{crop.season}</span>
+                                                <Badge variant="gray">{t('categories.' + crop.category.toLowerCase().replace(' ', '_'), crop.category)}</Badge>
+                                                <span className="text-xs text-gray-400">{t('seasons.' + crop.season.toLowerCase().replace(' ', '_'), crop.season)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -217,33 +219,33 @@ const CropGuidePage: React.FC = () => {
                                         <div className="flex items-center gap-3 mb-2">
                                             <span className="text-4xl">{selectedCrop.emoji}</span>
                                             <div>
-                                                <h2 className="text-2xl font-bold font-display">{selectedCrop.name}</h2>
-                                                <p className="text-white/70 text-sm">{selectedCrop.category} • {selectedCrop.season} Season</p>
+                                                <h2 className="text-2xl font-bold font-display">{t('crops.' + selectedCrop.name.toLowerCase(), selectedCrop.name)}</h2>
+                                                <p className="text-white/70 text-sm">{t('categories.' + selectedCrop.category.toLowerCase().replace(' ', '_'), selectedCrop.category)} • {t('seasons.' + selectedCrop.season.toLowerCase().replace(' ', '_'), selectedCrop.season)} {t('crop_guide.season_text', 'Season')}</p>
                                             </div>
                                         </div>
-                                        <p className="text-white/80 text-sm leading-relaxed">{selectedCrop.description}</p>
+                                        <p className="text-white/80 text-sm leading-relaxed">{t('crop_guide.description.' + selectedCrop.name.toLowerCase(), selectedCrop.description)}</p>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                                     <div className="bg-white/10 rounded-xl p-3 text-center">
                                         <Clock className="w-4 h-4 mx-auto mb-1 text-white/70" />
-                                        <p className="text-xs text-white/70">Duration</p>
+                                        <p className="text-xs text-white/70">{t('crop_guide.duration', 'Duration')}</p>
                                         <p className="text-sm font-semibold">{selectedCrop.duration}</p>
                                     </div>
                                     <div className="bg-white/10 rounded-xl p-3 text-center">
                                         <Droplets className="w-4 h-4 mx-auto mb-1 text-white/70" />
-                                        <p className="text-xs text-white/70">Water Need</p>
-                                        <p className="text-sm font-semibold">{selectedCrop.waterNeed}</p>
+                                        <p className="text-xs text-white/70">{t('crop_guide.water_need', 'Water Need')}</p>
+                                        <p className="text-sm font-semibold">{t('water.' + selectedCrop.waterNeed.toLowerCase(), selectedCrop.waterNeed)}</p>
                                     </div>
                                     <div className="bg-white/10 rounded-xl p-3 text-center">
                                         <Thermometer className="w-4 h-4 mx-auto mb-1 text-white/70" />
-                                        <p className="text-xs text-white/70">Temperature</p>
+                                        <p className="text-xs text-white/70">{t('crop_guide.temperature', 'Temperature')}</p>
                                         <p className="text-sm font-semibold">{selectedCrop.temperature}</p>
                                     </div>
                                     <div className="bg-white/10 rounded-xl p-3 text-center">
                                         <Sun className="w-4 h-4 mx-auto mb-1 text-white/70" />
-                                        <p className="text-xs text-white/70">Yield/Acre</p>
+                                        <p className="text-xs text-white/70">{t('crop_guide.yield', 'Yield/Acre')}</p>
                                         <p className="text-sm font-semibold">{selectedCrop.yieldPerAcre}</p>
                                     </div>
                                 </div>
@@ -263,7 +265,7 @@ const CropGuidePage: React.FC = () => {
                                                     : 'text-gray-500 dark:text-gray-400'
                                             )}
                                         >
-                                            {tab === 'overview' ? '📋 Overview' : tab === 'diseases' ? '🦠 Diseases' : '💡 Tips'}
+                                            {tab === 'overview' ? `📋 ${t('crop_guide.overview', 'Overview')}` : tab === 'diseases' ? `🦠 ${t('crop_guide.diseases', 'Diseases')}` : `💡 ${t('crop_guide.tips', 'Tips')}`}
                                         </button>
                                     ))}
                                 </div>
@@ -272,11 +274,11 @@ const CropGuidePage: React.FC = () => {
                                         <div className="space-y-4">
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <p className="text-xs text-gray-400 mb-1">Sowing Time</p>
+                                                    <p className="text-xs text-gray-400 mb-1">{t('crop_guide.sowing_time', 'Sowing Time')}</p>
                                                     <p className="font-medium text-gray-900 dark:text-white text-sm">{selectedCrop.sowingTime}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs text-gray-400 mb-1">Soil Type</p>
+                                                    <p className="text-xs text-gray-400 mb-1">{t('crop_guide.soil_type', 'Soil Type')}</p>
                                                     <p className="font-medium text-gray-900 dark:text-white text-sm">{selectedCrop.soilType}</p>
                                                 </div>
                                             </div>

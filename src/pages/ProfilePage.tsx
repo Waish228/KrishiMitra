@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { Card, PageHeader, Badge, Button } from '../components/ui/Components';
 import { useAuth } from '../contexts/AuthContext';
 import { updateProfile } from '../api/users';
+import { useTranslation } from 'react-i18next';
 
 const achievements = [
   { icon: '🏆', title: 'Early Adopter', desc: 'Joined in first 100 users', earned: true },
@@ -25,6 +26,7 @@ const farmHistory = [
 ];
 
 const ProfilePage: React.FC = () => {
+  const { t } = useTranslation();
   const { profile: authProfile, user, refreshProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,20 +76,20 @@ const ProfilePage: React.FC = () => {
 
   const displayName = authProfile?.full_name ?? user?.email?.split('@')[0] ?? 'Farmer';
   const memberSince = authProfile?.created_at
-    ? new Date(authProfile.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
-    : 'Recently';
+    ? new Date(authProfile.created_at).toLocaleDateString(t('ui.locale_code', 'en-IN'), { month: 'long', year: 'numeric' })
+    : t('profile.recently', 'Recently');
 
   const stats = [
-    { label: 'Farm Area', value: authProfile?.farm_area_acres ? `${authProfile.farm_area_acres} ac` : '--', icon: Leaf },
-    { label: 'AI Chats', value: '89', icon: TrendingUp },
-    { label: 'Scans Done', value: '34', icon: Droplets },
+    { labelKey: 'profile.stats_farm_area', label: 'Farm Area', value: authProfile?.farm_area_acres ? `${authProfile.farm_area_acres} ac` : '--', icon: Leaf },
+    { labelKey: 'profile.stats_ai_chats', label: 'AI Chats', value: '89', icon: TrendingUp },
+    { labelKey: 'profile.stats_scans_done', label: 'Scans Done', value: '34', icon: Droplets },
   ];
 
   return (
     <div className="page-container">
       <PageHeader
-        title="My Profile"
-        subtitle="Your farmer profile and farm details"
+        title={t('nav.profile', 'My Profile')}
+        subtitle={t('profile.subtitle', 'Your farmer profile and farm details')}
         action={
           <Button
             variant={editing ? 'primary' : 'secondary'}
@@ -96,7 +98,7 @@ const ProfilePage: React.FC = () => {
             disabled={saving}
             id="edit-profile-btn"
           >
-            {saving ? 'Saving...' : editing ? 'Save Changes' : 'Edit Profile'}
+            {saving ? t('ui.saving', 'Saving...') : editing ? t('profile.save_changes', 'Save Changes') : t('profile.edit_profile', 'Edit Profile')}
           </Button>
         }
       />
@@ -117,16 +119,16 @@ const ProfilePage: React.FC = () => {
                 <Camera className="w-3.5 h-3.5 text-gray-600" />
               </button>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-grow min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-2xl font-bold font-display">{displayName}</h2>
-                <Badge className="bg-white/20 text-white border-0">Verified Farmer ✓</Badge>
+                <Badge className="bg-white/20 text-white border-0">{t('profile.verified_farmer', 'Verified Farmer ✓')}</Badge>
               </div>
               <p className="text-white/70 text-sm mt-1 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5" />
-                {[authProfile?.village, authProfile?.district, authProfile?.state].filter(Boolean).join(', ') || 'Location not set'}
+                {[authProfile?.village, authProfile?.district, authProfile?.state].filter(Boolean).join(', ') || t('profile.location_not_set', 'Location not set')}
               </p>
-              <p className="text-white/60 text-xs mt-1">Member since {memberSince}</p>
+              <p className="text-white/60 text-xs mt-1">{t('profile.member_since', 'Member since')} {memberSince}</p>
             </div>
           </div>
 
@@ -135,14 +137,13 @@ const ProfilePage: React.FC = () => {
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-white/60 text-xs mt-0.5">{stat.label}</p>
+                <p className="text-white/60 text-xs mt-0.5">{t(stat.labelKey, stat.label)}</p>
               </div>
             ))}
           </div>
         </Card>
       </motion.div>
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl mb-6">
         {(['farm', 'achievements', 'history'] as const).map(tab => (
           <button
@@ -155,7 +156,7 @@ const ProfilePage: React.FC = () => {
             }`}
             id={`profile-tab-${tab}`}
           >
-            {tab === 'farm' ? '🌾 Farm' : tab === 'achievements' ? '🏆 Badges' : '📋 History'}
+            {tab === 'farm' ? `🌾 ${t('profile.tab_farm', 'Farm')}` : tab === 'achievements' ? `🏆 ${t('profile.tab_badges', 'Badges')}` : `📋 ${t('profile.tab_history', 'History')}`}
           </button>
         ))}
       </div>
@@ -170,17 +171,17 @@ const ProfilePage: React.FC = () => {
         {activeTab === 'farm' && (
           <div className="grid sm:grid-cols-2 gap-4">
             {([
-              { label: 'Full Name', key: 'full_name', icon: User, type: 'text' },
-              { label: 'Phone Number', key: 'phone', icon: Phone, type: 'tel' },
-              { label: 'Email Address', key: '_email', icon: Mail, type: 'email' },
-              { label: 'Village', key: 'village', icon: MapPin, type: 'text' },
-              { label: 'District', key: 'district', icon: MapPin, type: 'text' },
-              { label: 'State', key: 'state', icon: MapPin, type: 'text' },
-              { label: 'Farm Area (acres)', key: 'farm_area_acres', icon: Leaf, type: 'number' },
-              { label: 'Soil Type', key: 'soil_type', icon: Leaf, type: 'text' },
-              { label: 'Primary Crops', key: 'primary_crops', icon: Leaf, type: 'text' },
-              { label: 'Experience (years)', key: 'farming_experience_years', icon: Award, type: 'number' },
-              { label: 'KCC Number', key: 'kcc_number', icon: Award, type: 'text' },
+              { label: 'Full Name', labelKey: 'profile.full_name', key: 'full_name', icon: User, type: 'text' },
+              { label: 'Phone Number', labelKey: 'profile.phone_number', key: 'phone', icon: Phone, type: 'tel' },
+              { label: 'Email Address', labelKey: 'profile.email_address', key: '_email', icon: Mail, type: 'email' },
+              { label: 'Village', labelKey: 'profile.village', key: 'village', icon: MapPin, type: 'text' },
+              { label: 'District', labelKey: 'profile.district', key: 'district', icon: MapPin, type: 'text' },
+              { label: 'State', labelKey: 'profile.state', key: 'state', icon: MapPin, type: 'text' },
+              { label: 'Farm Area (acres)', labelKey: 'profile.farm_area_acres', key: 'farm_area_acres', icon: Leaf, type: 'number' },
+              { label: 'Soil Type', labelKey: 'crop_guide.soil_type', key: 'soil_type', icon: Leaf, type: 'text' },
+              { label: 'Primary Crops', labelKey: 'profile.primary_crops', key: 'primary_crops', icon: Leaf, type: 'text' },
+              { label: 'Experience (years)', labelKey: 'profile.experience_years', key: 'farming_experience_years', icon: Award, type: 'number' },
+              { label: 'KCC Number', labelKey: 'profile.kcc_number', key: 'kcc_number', icon: Award, type: 'text' },
             ] as const).map((field) => {
               const value = field.key === '_email'
                 ? (user?.email ?? '--')
@@ -192,7 +193,7 @@ const ProfilePage: React.FC = () => {
                       <field.icon className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400 mb-0.5">{field.label}</p>
+                      <p className="text-xs text-gray-400 mb-0.5">{t(field.labelKey, field.label)}</p>
                       {editing && field.key !== '_email' ? (
                         <input
                           type={field.type}
@@ -221,9 +222,9 @@ const ProfilePage: React.FC = () => {
                   }`}>
                     {a.earned ? a.icon : '🔒'}
                   </div>
-                  <p className="font-semibold text-gray-900 dark:text-white text-sm">{a.title}</p>
-                  <p className="text-xs text-gray-400 mt-1">{a.desc}</p>
-                  {a.earned && <Badge variant="green" className="mt-2">Earned ✓</Badge>}
+                  <p className="font-semibold text-gray-900 dark:text-white text-sm">{t('badges.title.' + a.title.toLowerCase().replace(' ', '_'), a.title)}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('badges.desc.' + a.title.toLowerCase().replace(' ', '_'), a.desc)}</p>
+                  {a.earned && <Badge variant="green" className="mt-2">{t('profile.earned', 'Earned ✓')}</Badge>}
                 </div>
               </Card>
             ))}
@@ -247,11 +248,11 @@ const ProfilePage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-gray-50 dark:bg-slate-700 rounded-xl p-3">
-                    <p className="text-xs text-gray-400">Avg Yield</p>
+                    <p className="text-xs text-gray-400">{t('profile.avg_yield', 'Avg Yield')}</p>
                     <p className="font-bold text-gray-900 dark:text-white text-sm mt-0.5">{h.yield}</p>
                   </div>
                   <div className="bg-green-50 dark:bg-green-900/10 rounded-xl p-3">
-                    <p className="text-xs text-gray-400">Revenue</p>
+                    <p className="text-xs text-gray-400">{t('profile.revenue', 'Revenue')}</p>
                     <p className="font-bold text-green-600 dark:text-green-400 text-sm mt-0.5">{h.revenue}</p>
                   </div>
                 </div>

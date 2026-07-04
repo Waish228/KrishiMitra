@@ -10,6 +10,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export interface Reminder {
   id: string;
@@ -23,14 +24,15 @@ export interface Reminder {
 }
 
 const reminderTypes = [
-  { id: 'irrigation', label: 'Irrigation', icon: Droplets, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-  { id: 'fertilizer', label: 'Fertilizer', icon: FlaskConical, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/20' },
-  { id: 'disease', label: 'Disease Check', icon: Leaf, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
-  { id: 'harvest', label: 'Harvest', icon: CalendarDays, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-  { id: 'weather', label: 'Weather alert', icon: Sun, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' }
+  { id: 'irrigation', labelKey: 'reminders.type_irrigation', label: 'Irrigation', icon: Droplets, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+  { id: 'fertilizer', labelKey: 'reminders.type_fertilizer', label: 'Fertilizer', icon: FlaskConical, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/20' },
+  { id: 'disease', labelKey: 'reminders.type_disease', label: 'Disease Check', icon: Leaf, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
+  { id: 'harvest', labelKey: 'reminders.type_harvest', label: 'Harvest', icon: CalendarDays, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+  { id: 'weather', labelKey: 'reminders.type_weather', label: 'Weather alert', icon: Sun, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' }
 ];
 
 export default function RemindersPage() {
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,15 +154,15 @@ export default function RemindersPage() {
   return (
     <div className="page-container max-w-5xl mx-auto">
       <PageHeader
-        title="Smart Reminders"
-        subtitle="Manage your farming tasks with intelligent notifications"
+        title={t('nav.reminders', 'Smart Reminders')}
+        subtitle={t('reminders.subtitle', 'Manage your farming tasks with intelligent notifications')}
         action={
           <Button 
             variant="primary" 
             icon={<Plus className="w-4 h-4" />}
             onClick={() => setShowAddForm(!showAddForm)}
           >
-            {showAddForm ? 'Cancel' : 'New Reminder'}
+            {showAddForm ? t('ui.cancel', 'Cancel') : t('ui.new_reminder', 'New Reminder')}
           </Button>
         }
       />
@@ -172,8 +174,8 @@ export default function RemindersPage() {
             <Bell className="w-5 h-5" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900 dark:text-white text-sm">Push Notifications</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Receive alerts on your device</p>
+            <p className="font-semibold text-gray-900 dark:text-white text-sm">{t('ui.push_notifications', 'Push Notifications')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('ui.receive_alerts', 'Receive alerts on your device')}</p>
           </div>
         </div>
         <button 
@@ -195,9 +197,9 @@ export default function RemindersPage() {
           ) : reminders.length === 0 ? (
             <div className="text-center py-20 bg-gray-50 dark:bg-slate-800/30 rounded-3xl border border-dashed border-gray-200 dark:border-slate-700">
               <Bell className="w-12 h-12 mx-auto text-gray-300 dark:text-slate-600 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">No active reminders</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('reminders.no_reminders', 'No active reminders')}</h3>
               <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto mt-2">
-                Click "New Reminder" to start tracking your farming schedule.
+                {t('reminders.click_new', 'Click "New Reminder" to start tracking your farming schedule.')}
               </p>
             </div>
           ) : (
@@ -239,7 +241,7 @@ export default function RemindersPage() {
                           <Badge variant={isOverdue ? 'red' : 'gray'} className="text-[10px]">
                             {new Date(reminder.due_date).toLocaleDateString()}
                           </Badge>
-                          {isOverdue && <span className="text-[10px] font-bold text-red-500 uppercase">Overdue</span>}
+                          {isOverdue && <span className="text-[10px] font-bold text-red-500 uppercase">{t('ui.overdue', 'Overdue')}</span>}
                         </div>
                         {reminder.description && (
                           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{reminder.description}</p>
@@ -247,7 +249,7 @@ export default function RemindersPage() {
                         <div className="flex items-center gap-2">
                           <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1", typeInfo.bg, typeInfo.color)}>
                             <Icon className="w-3 h-3" />
-                            {typeInfo.label}
+                            {t(typeInfo.labelKey, typeInfo.label)}
                           </span>
                         </div>
                       </div>
@@ -285,22 +287,22 @@ export default function RemindersPage() {
               className="lg:col-span-5"
             >
               <Card className="p-5 sticky top-6 border-primary-200 dark:border-primary-900/50 shadow-lg">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Create Reminder</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">{t('reminders.create_title', 'Create Reminder')}</h3>
                 <form onSubmit={handleAdd} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Title</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('reminders.form_title', 'Title')}</label>
                     <input 
                       type="text" 
                       required
                       value={newTitle}
                       onChange={e => setNewTitle(e.target.value)}
-                      placeholder="e.g., Apply Urea to Wheat"
+                      placeholder={t('reminders.title_placeholder', 'e.g., Apply Urea to Wheat')}
                       className="input-field"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Type</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('reminders.form_type', 'Type')}</label>
                     <div className="grid grid-cols-2 gap-2">
                       {reminderTypes.map(t => {
                         const Icon = t.icon;
@@ -317,7 +319,7 @@ export default function RemindersPage() {
                             )}
                           >
                             <Icon className="w-3 h-3" />
-                            {t.label}
+                            {t(t.labelKey, t.label)}
                           </button>
                         );
                       })}
@@ -325,7 +327,7 @@ export default function RemindersPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Due Date & Time</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('reminders.form_due', 'Due Date & Time')}</label>
                     <input 
                       type="datetime-local" 
                       required
@@ -336,11 +338,11 @@ export default function RemindersPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description (Optional)</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('reminders.form_desc', 'Description (Optional)')}</label>
                     <textarea 
                       value={newDesc}
                       onChange={e => setNewDesc(e.target.value)}
-                      placeholder="Add any extra notes..."
+                      placeholder={t('reminders.desc_placeholder', 'Add any extra notes...')}
                       className="input-field resize-none h-20"
                     />
                   </div>
@@ -352,7 +354,7 @@ export default function RemindersPage() {
                     disabled={isSubmitting}
                     icon={isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   >
-                    {isSubmitting ? 'Saving...' : 'Save Reminder'}
+                    {isSubmitting ? t('ui.saving', 'Saving...') : t('reminders.save_btn', 'Save Reminder')}
                   </Button>
                 </form>
               </Card>

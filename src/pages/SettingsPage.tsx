@@ -11,6 +11,7 @@ import { Card, PageHeader, Badge } from '../components/ui/Components';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -71,6 +72,8 @@ const SettingsPage: React.FC = () => {
   const { theme, toggleTheme, isDark } = useTheme();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+
   const [settings, setSettings] = useState({
     notifications: true,
     weatherAlerts: true,
@@ -82,7 +85,6 @@ const SettingsPage: React.FC = () => {
     locationAccess: true,
     biometric: false,
     analyticsOptIn: true,
-    language: 'English',
     units: 'Metric',
   });
 
@@ -90,24 +92,28 @@ const SettingsPage: React.FC = () => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const languages = ['English', 'हिंदी (Hindi)', 'मराठी (Marathi)', 'తెలుగు (Telugu)', 'ਪੰਜਾਬੀ (Punjabi)'];
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'hi', name: 'हिंदी (Hindi)' },
+    { code: 'bn', name: 'বাংলা (Bengali)' }
+  ];
 
   return (
     <div className="page-container max-w-2xl mx-auto">
       <PageHeader
-        title="Settings"
-        subtitle="Customize your KrishiMitra experience"
+        title={t('settings.title', 'Settings')}
+        subtitle={t('settings.subtitle', 'Customize your KrishiMitra experience')}
       />
 
       {/* Appearance */}
       <section className="mb-6">
         <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-1">
-          Appearance
+          {t('settings.appearance', 'Appearance')}
         </h2>
         <Card className="overflow-hidden divide-y divide-gray-100 dark:divide-slate-700">
           {/* Theme */}
           <div className="px-5 py-4">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">Theme</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">{t('settings.theme', 'Theme')}</p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => !isDark || toggleTheme()}
@@ -123,8 +129,8 @@ const SettingsPage: React.FC = () => {
                   <Sun className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Light</p>
-                  <p className="text-xs text-gray-400">Clean and bright</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{t('settings.theme_light', 'Light')}</p>
+                  <p className="text-xs text-gray-400">{t('settings.theme_light_desc', 'Clean and bright')}</p>
                 </div>
                 {!isDark && <div className="ml-auto w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
                   <div className="w-2 h-2 bg-white rounded-full" />
@@ -145,8 +151,8 @@ const SettingsPage: React.FC = () => {
                   <Moon className="w-5 h-5 text-blue-400" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Dark</p>
-                  <p className="text-xs text-gray-400">Easy on eyes</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{t('settings.theme_dark', 'Dark')}</p>
+                  <p className="text-xs text-gray-400">{t('settings.theme_dark_desc', 'Easy on eyes')}</p>
                 </div>
                 {isDark && <div className="ml-auto w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
                   <div className="w-2 h-2 bg-white rounded-full" />
@@ -162,16 +168,19 @@ const SettingsPage: React.FC = () => {
                 <Globe className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Language</p>
-                <p className="text-xs text-gray-400">App display language</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{t('settings.language', 'Language')}</p>
+                <p className="text-xs text-gray-400">{t('settings.language_desc', 'App display language')}</p>
               </div>
               <select
-                value={settings.language}
-                onChange={(e) => setSettings(prev => ({ ...prev, language: e.target.value }))}
+                value={i18n.language.split('-')[0]}
+                onChange={(e) => {
+                  i18n.changeLanguage(e.target.value);
+                  toast.success(`Language switched successfully!`);
+                }}
                 className="text-sm bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 id="language-select"
               >
-                {languages.map(l => <option key={l}>{l}</option>)}
+                {languages.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
               </select>
             </div>
           </div>
@@ -183,8 +192,8 @@ const SettingsPage: React.FC = () => {
                 <Database className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Measurement Units</p>
-                <p className="text-xs text-gray-400">For area, temperature, weight</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{t('settings.measurement', 'Measurement Units')}</p>
+                <p className="text-xs text-gray-400">{t('settings.measurement_desc', 'For area, temperature, weight')}</p>
               </div>
               <select
                 value={settings.units}
@@ -192,8 +201,8 @@ const SettingsPage: React.FC = () => {
                 className="text-sm bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 id="units-select"
               >
-                <option>Metric</option>
-                <option>Imperial</option>
+                <option value="Metric">{t('settings.metric', 'Metric')}</option>
+                <option value="Imperial">{t('settings.imperial', 'Imperial')}</option>
               </select>
             </div>
           </div>
@@ -203,15 +212,15 @@ const SettingsPage: React.FC = () => {
       {/* Notifications */}
       <section className="mb-6">
         <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-1">
-          Notifications
+          {t('settings.notifications', 'Notifications')}
         </h2>
         <Card className="overflow-hidden divide-y divide-gray-100 dark:divide-slate-700">
           {[
-            { key: 'notifications' as const, icon: <Bell className="w-4 h-4" />, label: 'Push Notifications', desc: 'Receive alerts on your device' },
-            { key: 'weatherAlerts' as const, icon: <span className="text-sm">🌤️</span>, label: 'Weather Alerts', desc: 'Rain, frost, and extreme weather' },
-            { key: 'marketAlerts' as const, icon: <span className="text-sm">📈</span>, label: 'Market Price Alerts', desc: 'Price changes for your crops' },
-            { key: 'diseaseAlerts' as const, icon: <span className="text-sm">🦠</span>, label: 'Disease Outbreak Alerts', desc: 'Regional pest and disease warnings' },
-            { key: 'soundEffects' as const, icon: <Volume2 className="w-4 h-4" />, label: 'Sound Effects', desc: 'App sounds and alerts' },
+            { key: 'notifications' as const, icon: <Bell className="w-4 h-4" />, label: t('settings.notifications', 'Push Notifications'), desc: t('settings.push_desc', 'Receive alerts on your device') },
+            { key: 'weatherAlerts' as const, icon: <span className="text-sm">🌤️</span>, label: t('settings.weather_alerts', 'Weather Alerts'), desc: t('settings.weather_desc', 'Rain, frost, and extreme weather') },
+            { key: 'marketAlerts' as const, icon: <span className="text-sm">📈</span>, label: t('settings.market_alerts', 'Market Price Alerts'), desc: t('settings.market_desc', 'Price changes for your crops') },
+            { key: 'diseaseAlerts' as const, icon: <span className="text-sm">🦠</span>, label: t('settings.disease_alerts', 'Disease Outbreak Alerts'), desc: t('settings.disease_desc', 'Regional pest and disease warnings') },
+            { key: 'soundEffects' as const, icon: <Volume2 className="w-4 h-4" />, label: t('settings.sound', 'Sound Effects'), desc: t('settings.sound_desc', 'App sounds and alerts') },
           ].map((item) => (
             <SettingItem
               key={item.key}
@@ -234,31 +243,31 @@ const SettingsPage: React.FC = () => {
       {/* Privacy & Data */}
       <section className="mb-6">
         <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-1">
-          Privacy & Data
+          {t('settings.privacy', 'Privacy & Data')}
         </h2>
         <Card className="overflow-hidden divide-y divide-gray-100 dark:divide-slate-700">
           <SettingItem
             icon={<Wifi className="w-4 h-4" />}
-            label="Offline Mode"
-            description="Cache data for offline access"
+            label={t('settings.offline', 'Offline Mode')}
+            description={t('settings.offline_desc', 'Cache data for offline access')}
             action={<Toggle2 checked={settings.offlineMode} onChange={() => toggle('offlineMode')} id="offline-toggle" />}
           />
           <SettingItem
             icon={<Database className="w-4 h-4" />}
-            label="Auto Sync"
-            description="Sync data when connected"
+            label={t('settings.sync', 'Auto Sync')}
+            description={t('settings.sync_desc', 'Sync data when connected')}
             action={<Toggle2 checked={settings.autoSync} onChange={() => toggle('autoSync')} id="sync-toggle" />}
           />
           <SettingItem
             icon={<Shield className="w-4 h-4" />}
-            label="Biometric Lock"
-            description="Use fingerprint/face for login"
+            label={t('settings.biometric', 'Biometric Lock')}
+            description={t('settings.biometric_desc', 'Use fingerprint/face for login')}
             action={<Toggle2 checked={settings.biometric} onChange={() => toggle('biometric')} id="biometric-toggle" />}
           />
           <SettingItem
             icon={<Info className="w-4 h-4" />}
-            label="Analytics"
-            description="Help improve the app with usage data"
+            label={t('settings.analytics', 'Analytics')}
+            description={t('settings.analytics_desc', 'Help improve the app with usage data')}
             action={<Toggle2 checked={settings.analyticsOptIn} onChange={() => toggle('analyticsOptIn')} id="analytics-toggle" />}
           />
         </Card>
@@ -267,12 +276,12 @@ const SettingsPage: React.FC = () => {
       {/* Support */}
       <section className="mb-6">
         <h2 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-1">
-          Support
+          {t('settings.support', 'Support')}
         </h2>
         <Card className="overflow-hidden divide-y divide-gray-100 dark:divide-slate-700">
-          <SettingItem icon={<HelpCircle className="w-4 h-4" />} label="Help & FAQ" description="Get answers to common questions" onClick={() => {}} id="help-btn" />
-          <SettingItem icon={<Star className="w-4 h-4" />} label="Rate KrishiMitra" description="Share your experience" onClick={() => {}} id="rate-btn" />
-          <SettingItem icon={<Smartphone className="w-4 h-4" />} label="About" description="Version 2.1.4 • Build 241203" onClick={() => {}} id="about-btn" />
+          <SettingItem icon={<HelpCircle className="w-4 h-4" />} label={t('settings.help', 'Help & FAQ')} description={t('settings.help_desc', 'Get answers to common questions')} onClick={() => {}} id="help-btn" />
+          <SettingItem icon={<Star className="w-4 h-4" />} label={t('settings.rate', 'Rate KrishiMitra')} description={t('settings.rate_desc', 'Share your experience')} onClick={() => {}} id="rate-btn" />
+          <SettingItem icon={<Smartphone className="w-4 h-4" />} label={t('settings.about', 'About')} description={t('settings.about_desc', 'Version 2.1.4 • Build 241203')} onClick={() => {}} id="about-btn" />
         </Card>
       </section>
 
@@ -281,23 +290,23 @@ const SettingsPage: React.FC = () => {
         <Card className="overflow-hidden divide-y divide-gray-100 dark:divide-slate-700">
           <SettingItem
             icon={<LogOut className="w-4 h-4" />}
-            label="Sign Out"
+            label={t('settings.signout', 'Sign Out')}
             danger
             onClick={async () => {
               try {
                 await signOut();
-                toast.success('Signed out successfully');
+                toast.success(t('settings.signout_success', 'Signed out successfully'));
                 navigate('/auth');
               } catch {
-                toast.error('Failed to sign out');
+                toast.error(t('settings.signout_error', 'Failed to sign out'));
               }
             }}
             id="signout-btn"
           />
           <SettingItem
             icon={<Trash2 className="w-4 h-4" />}
-            label="Delete Account"
-            description="This action cannot be undone"
+            label={t('settings.delete_account', 'Delete Account')}
+            description={t('settings.delete_desc', 'This action cannot be undone')}
             danger
             onClick={() => {}}
             id="delete-account-btn"
@@ -306,7 +315,7 @@ const SettingsPage: React.FC = () => {
       </section>
 
       <div className="text-center text-xs text-gray-400 pb-4">
-        KrishiMitra AI v2.1.4 • Made with ❤️ for Indian Farmers
+        KrishiMitra AI v2.1.4 • {t('settings.footer', 'Made with ❤️ for Indian Farmers')}
       </div>
     </div>
   );

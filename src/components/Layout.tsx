@@ -11,26 +11,33 @@ import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
+import { useTranslation } from 'react-i18next';
+
+const LANGUAGES = [
+  { code: 'en', label: 'EN', name: 'English' },
+  { code: 'hi', label: 'HI', name: 'हिंदी' },
+  { code: 'bn', label: 'BN', name: 'বাংলা' }
+];
 
 const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/chat', label: 'AI Chat', icon: MessageSquare },
-    { path: '/disease', label: 'Disease Detection', icon: Leaf },
-    { path: '/crop-guide', label: 'Crop Guide', icon: BookOpen },
-    { path: '/weather', label: 'Weather', icon: CloudSun },
-    { path: '/reminders', label: 'Smart Reminders', icon: Bell },
-    { path: '/market', label: 'Market Prices', icon: TrendingUp },
-    { path: '/planner', label: 'Farming Planner', icon: CalendarDays },
-    { path: '/profile', label: 'Profile', icon: User },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/dashboard', labelKey: 'nav.dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/chat', labelKey: 'nav.ai_chat', label: 'AI Chat', icon: MessageSquare },
+    { path: '/disease', labelKey: 'nav.disease_detection', label: 'Disease Detection', icon: Leaf },
+    { path: '/crop-guide', labelKey: 'nav.crop_guide', label: 'Crop Guide', icon: BookOpen },
+    { path: '/weather', labelKey: 'nav.weather', label: 'Weather', icon: CloudSun },
+    { path: '/reminders', labelKey: 'nav.reminders', label: 'Smart Reminders', icon: Bell },
+    { path: '/market', labelKey: 'nav.market_prices', label: 'Market Prices', icon: TrendingUp },
+    { path: '/planner', labelKey: 'nav.farming_planner', label: 'Farming Planner', icon: CalendarDays },
+    { path: '/profile', labelKey: 'nav.profile', label: 'Profile', icon: User },
+    { path: '/settings', labelKey: 'nav.settings', label: 'Settings', icon: Settings },
 ];
 
 const bottomNavItems = [
-    { path: '/dashboard', label: 'Home', icon: LayoutDashboard },
-    { path: '/chat', label: 'AI Chat', icon: MessageSquare },
-    { path: '/disease', label: 'Detect', icon: Leaf },
-    { path: '/weather', label: 'Weather', icon: CloudSun },
-    { path: '/profile', label: 'Profile', icon: User },
+    { path: '/dashboard', labelKey: 'nav.dashboard', label: 'Home', icon: LayoutDashboard },
+    { path: '/chat', labelKey: 'nav.ai_chat', label: 'AI Chat', icon: MessageSquare },
+    { path: '/disease', labelKey: 'nav.disease_detection', label: 'Detect', icon: Leaf },
+    { path: '/weather', labelKey: 'nav.weather', label: 'Weather', icon: CloudSun },
+    { path: '/profile', labelKey: 'nav.profile', label: 'Profile', icon: User },
 ];
 
 interface LayoutProps {
@@ -67,6 +74,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { profile, signOut } = useAuth();
+    const { t, i18n } = useTranslation();
 
     const currentPage = navItems.find(item => item.path === location.pathname);
 
@@ -83,6 +91,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         } catch {
             toast.error('Failed to sign out');
         }
+    };
+
+    const changeLanguage = (code: string) => {
+        i18n.changeLanguage(code);
+        toast.success(`Language switched to ${LANGUAGES.find(l => l.code === code)?.name}`);
     };
 
     // ─── User info panel (reused in both sidebars) ──────────────────────────
@@ -106,7 +119,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 id="sidebar-signout-btn"
             >
                 <LogOut className="w-4 h-4" />
-                Sign Out
+                {t('settings.signout', 'Sign Out')}
             </button>
         </div>
     );
@@ -146,7 +159,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     'group-hover:scale-110',
                                     isActive ? 'text-primary-600 dark:text-primary-400' : ''
                                 )} />
-                                <span className="flex-1">{item.label}</span>
+                                <span className="flex-1">{t(item.labelKey, item.label)}</span>
                                 {isActive && <ChevronRight className="w-4 h-4 text-primary-400" />}
                             </NavLink>
                         );
@@ -209,7 +222,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                             )}
                                         >
                                             <Icon className="w-5 h-5" />
-                                            <span>{item.label}</span>
+                                            <span>{t(item.labelKey, item.label)}</span>
                                         </NavLink>
                                     );
                                 })}
@@ -235,7 +248,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                     <div className="flex-1">
                         <h2 className="font-semibold text-gray-900 dark:text-white text-base">
-                            {currentPage?.label || 'KrishiMitra AI'}
+                            {currentPage ? t(currentPage.labelKey, currentPage.label) : 'KrishiMitra AI'}
                         </h2>
                     </div>
 
@@ -244,13 +257,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search..."
+                                placeholder={t('ui.search', 'Search...')}
                                 className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                             />
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Language Switcher Dropdown */}
+                        <div className="relative">
+                            <select
+                                value={i18n.language.split('-')[0]}
+                                onChange={(e) => changeLanguage(e.target.value)}
+                                className="text-xs font-bold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer shadow-sm"
+                            >
+                                {LANGUAGES.map(lang => (
+                                    <option key={lang.code} value={lang.code}>{lang.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <button
                             className="relative p-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
                             id="notifications-btn"
@@ -305,7 +331,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     'text-[10px] font-medium transition-colors duration-200',
                                     isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'
                                 )}>
-                                    {item.label}
+                                    {t(item.labelKey, item.label)}
                                 </span>
                             </NavLink>
                         );

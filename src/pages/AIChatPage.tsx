@@ -11,6 +11,7 @@ import { toast } from 'react-hot-toast';
 
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import type { SupportedLanguage } from '../api/ai/prompts';
 import { streamChatResponse } from '../api/ai/client';
 import { AI_CONFIG } from '../api/ai/config';
@@ -31,7 +32,7 @@ const SUGGESTIONS = [
     '🐛 How to control aphids organically?',
 ];
 
-const LANGUAGES: SupportedLanguage[] = ['English', 'Hindi', 'Bengali', 'Odia'];
+const LANGUAGES: SupportedLanguage[] = ['English', 'Hindi', 'Bengali'];
 
 const remarkPlugins = [remarkGfm];
 
@@ -46,9 +47,24 @@ export default function AIChatPage() {
 
     const [isTyping, setIsTyping] = useState(false);
     const [streamingContent, setStreamingContent] = useState('');
-    const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>(
-        (profile?.preferred_language as SupportedLanguage) || 'English'
-    );
+    const { t, i18n } = useTranslation();
+
+    const currentLangCode = i18n.language.split('-')[0];
+    const getLangFromCode = (code: string): SupportedLanguage => {
+        if (code === 'hi') return 'Hindi';
+        if (code === 'bn') return 'Bengali';
+        return 'English';
+    };
+    const getCodeFromLang = (lang: SupportedLanguage): string => {
+        if (lang === 'Hindi') return 'hi';
+        if (lang === 'Bengali') return 'bn';
+        return 'en';
+    };
+
+    const selectedLanguage = getLangFromCode(currentLangCode);
+    const setSelectedLanguage = (lang: SupportedLanguage) => {
+        i18n.changeLanguage(getCodeFromLang(lang));
+    };
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loadingHistory, setLoadingHistory] = useState(true);
@@ -274,7 +290,7 @@ export default function AIChatPage() {
                 sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
             )}>
                 <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                    <h2 className="font-semibold text-gray-800 dark:text-gray-200">Chat History</h2>
+                    <h2 className="font-semibold text-gray-800 dark:text-gray-200">{t('chat.history', 'Chat History')}</h2>
                     <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-md">
                         <X className="w-5 h-5" />
                     </button>
@@ -285,13 +301,13 @@ export default function AIChatPage() {
                         onClick={handleNewChat}
                         className="w-full flex items-center gap-2 px-3 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm"
                     >
-                        <Plus className="w-4 h-4" /> New Conversation
+                        <Plus className="w-4 h-4" /> {t('dashboard.new_chat', 'New Conversation')}
                     </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
                     {loadingHistory ? (
-                        <div className="text-center py-4 text-sm text-gray-500">Loading history…</div>
+                        <div className="text-center py-4 text-sm text-gray-500">{t('chat.loading_history', 'Loading history…')}</div>
                     ) : conversations.length === 0 ? (
                         <div className="text-center py-4 text-sm text-gray-500">No past conversations</div>
                     ) : (
@@ -437,13 +453,10 @@ export default function AIChatPage() {
                                 <Sparkles className="w-8 h-8 text-primary-600 dark:text-primary-400" />
                             </div>
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-display">
-                                How can I help your farm today?
+                                {t('chat.title', 'KrishiMitra AI')}
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-8">
-                                {voiceMode
-                                    ? 'Voice mode is on. Hold the 🎤 button and speak your question.'
-                                    : 'Ask me about crop diseases, weather, market prices, or farming advice in your preferred language.'
-                                }
+                                {t('chat.subtitle', 'Your intelligent farming assistant')}
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
@@ -594,7 +607,7 @@ export default function AIChatPage() {
                                 value={isListening && interimTranscript ? interimTranscript : input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder={isListening ? 'Listening…' : 'Ask anything about farming…'}
+                                placeholder={isListening ? t('chat.start_listening', 'Listening…') : t('chat.placeholder', 'Ask anything about farming…')}
                                 rows={1}
                                 readOnly={isListening}
                                 className={cn(

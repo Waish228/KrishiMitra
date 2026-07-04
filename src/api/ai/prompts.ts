@@ -1,4 +1,4 @@
-export type SupportedLanguage = 'English' | 'Hindi' | 'Bengali' | 'Odia';
+export type SupportedLanguage = 'English' | 'Hindi' | 'Bengali';
 
 export function getSystemPrompt(language: SupportedLanguage = 'English'): string {
   return `You are KrishiMitra AI, an intelligent, friendly, and expert farming assistant designed specifically to help farmers in India. 

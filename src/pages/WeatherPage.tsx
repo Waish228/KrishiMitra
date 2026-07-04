@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
     Wind, Droplets, Eye, Gauge, Sunrise, Sunset,
-    Thermometer, CloudRain, MapPin, RefreshCw, Loader2, Sparkles, Sprout
+    Thermometer, CloudRain, MapPin, RefreshCw, Loader2, Sparkles, Sprout, Info
 } from 'lucide-react';
 import { Card, PageHeader } from '../components/ui/Components';
 import { cn } from '../lib/utils';
@@ -12,6 +12,7 @@ import { generateWeatherAdvisory } from '../api/ai/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { SupportedLanguage } from '../api/ai/prompts';
+import { useTranslation } from 'react-i18next';
 
 interface WeatherData {
     current: {
@@ -36,31 +37,53 @@ export default function WeatherPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [locationName, setLocationName] = useState('Fetching location...');
     const [activeDay, setActiveDay] = useState(0);
+    const [locationDenied, setLocationDenied] = useState(false);
 
     const hasFetchedHistory = useRef(false);
 
-    const selectedLanguage = (profile?.preferred_language as SupportedLanguage) || 'English';
+    const { t, i18n } = useTranslation();
+    const getAI_Language = (code: string): SupportedLanguage => {
+        if (code.startsWith('hi')) return 'Hindi';
+        if (code.startsWith('bn')) return 'Bengali';
+        return 'English';
+    };
+    const selectedLanguage = getAI_Language(i18n.language);
 
     const fetchWeather = async () => {
         setLoading(true);
         setAdvisoryStream('');
         hasFetchedHistory.current = false;
+        setLocationDenied(false);
+
+        let latitude = 26.8467;
+        let longitude = 80.9462;
+        let finalLocationName = '';
 
         try {
             // 1. Get user location
             const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
             });
-            const { latitude, longitude } = pos.coords;
+            latitude = pos.coords.latitude;
+            longitude = pos.coords.longitude;
 
             // Reverse geocode for city name
             try {
                 const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
                 const geoData = await geoRes.json();
-                setLocationName(geoData.address.city || geoData.address.town || geoData.address.village || 'Your Farm');
+                finalLocationName = geoData.address.city || geoData.address.town || geoData.address.village || 'Your Farm';
             } catch (e) {
-                setLocationName('Your Farm');
+                finalLocationName = 'Your Farm';
             }
+        } catch (error) {
+            console.warn('Geolocation failed, using Lucknow fallback:', error);
+            setLocationDenied(true);
+            finalLocationName = `Lucknow (${t('location.default_fallback', 'Default')})`;
+        }
+
+        setLocationName(finalLocationName);
+
+        try {
 
             // 2. Fetch Open-Meteo
             const weatherRes = await fetch(
@@ -69,11 +92,13 @@ export default function WeatherPage() {
             const data = await weatherRes.json();
 
             const parseCode = (code: number, isDay = true) => {
-                if (code <= 3) return { condition: 'Clear/Cloudy', icon: isDay ? '⛅' : '🌙' };
-                if (code <= 49) return { condition: 'Foggy', icon: '🌫️' };
-                if (code <= 69) return { condition: 'Rain', icon: '🌧️' };
-                if (code <= 79) return { condition: 'Snow', icon: '❄️' };
-                return { condition: 'Storm', icon: '⛈️' };
+                if (code === 0) return { condition: t('weather.clear', 'Clear'), icon: '☀️' };
+                if (code <= 3) return { condition: t('weather.partly_cloudy', 'Partly Cloudy'), icon: '⛅' };
+                if (code <= 39) return { condition: t('weather.cloudy', 'Cloudy'), icon: '☁️' };
+                if (code <= 49) return { condition: t('weather.foggy', 'Foggy'), icon: '🌫️' };
+                if (code <= 69) return { condition: t('weather.rain', 'Rain'), icon: '🌧️' };
+                if (code <= 79) return { condition: t('weather.snow', 'Snow'), icon: '❄️' };
+                return { condition: t('weather.storm', 'Storm'), icon: '⛈️' };
             };
 
             const currCond = parseCode(data.current.weather_code, data.current.is_day === 1);
@@ -101,9 +126,9 @@ export default function WeatherPage() {
                 }),
                 daily: data.daily.time.slice(0, 7).map((time: string, i: number) => {
                     const d = new Date(time);
-                    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
                     return {
-                        day: i === 0 ? 'Today' : days[d.getDay()],
+                        day: i === 0 ? t('days.today', 'Today') : t(`days.${days[d.getDay()]}`, days[d.getDay()]),
                         high: Math.round(data.daily.temperature_2m_max[i]),
                         low: Math.round(data.daily.temperature_2m_min[i]),
                         icon: parseCode(data.daily.weather_code[i]).icon,
@@ -133,8 +158,7 @@ export default function WeatherPage() {
             generateAdvisory(formattedData);
 
         } catch (error) {
-            console.error(error);
-            setLocationName('Location Access Denied');
+            console.error('Error fetching weather details:', error);
         } finally {
             setLoading(false);
         }
@@ -166,30 +190,37 @@ Tomorrow's Forecast: ${data.daily[1].high}°C, ${data.daily[1].rain}% chance of 
 
     useEffect(() => {
         fetchWeather();
-    }, []);
+    }, [selectedLanguage]);
 
     return (
         <div className="page-container max-w-5xl mx-auto">
             <PageHeader
-                title="Weather Forecast"
-                subtitle="Hyperlocal AI farming weather intelligence"
+                title={t('nav.weather', 'Weather Forecast')}
+                subtitle={t('weather.subtitle', 'Hyperlocal AI farming weather intelligence')}
                 action={
                     <button onClick={fetchWeather} disabled={loading} className="btn-secondary flex items-center gap-2 text-sm disabled:opacity-50">
                         <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-                        Refresh
+                        {t('ui.refresh', 'Refresh')}
                     </button>
                 }
             />
 
             <div className="flex items-center gap-2 mb-6 text-sm text-gray-500 dark:text-gray-400">
                 <MapPin className="w-4 h-4 text-primary-500" />
-                <span>{locationName} • Live Sensor Data</span>
+                <span>{locationName === 'Fetching location...' ? t('weather.fetching_location', 'Fetching location...') : locationName} • {t('weather.live_sensor', 'Live Sensor Data')}</span>
             </div>
+
+            {locationDenied && (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <span>{t('weather.location_warning', 'Location access is denied. Showing default weather for Lucknow. Enable GPS to get local forecasts.')}</span>
+                </div>
+            )}
 
             {loading && !weatherData ? (
                 <div className="py-20 flex flex-col items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-primary-500 mb-4" />
-                    <p className="text-gray-500 animate-pulse">Fetching meteorological data...</p>
+                    <p className="text-gray-500 animate-pulse">{t('weather.fetching_data', 'Fetching meteorological data...')}</p>
                 </div>
             ) : weatherData && (
                 <>
@@ -204,7 +235,7 @@ Tomorrow's Forecast: ${data.daily[1].high}°C, ${data.daily[1].rain}% chance of 
                                             <span className="text-8xl font-bold font-display leading-none">{weatherData.current.temp}°</span>
                                             <div className="mb-3">
                                                 <p className="text-white/80 text-xl">{weatherData.current.condition}</p>
-                                                <p className="text-white/60 text-sm">Feels like {weatherData.current.feelsLike}°C</p>
+                                                <p className="text-white/60 text-sm">{t('weather.feels_like', 'Feels like')} {weatherData.current.feelsLike}°C</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-6 mt-4 text-sm text-white/70">
@@ -224,7 +255,7 @@ Tomorrow's Forecast: ${data.daily[1].high}°C, ${data.daily[1].rain}% chance of 
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary-500"></div>
                             <div className="flex items-center gap-2 mb-4">
                                 <Sparkles className="w-5 h-5 text-primary-500" />
-                                <h2 className="font-bold text-gray-900 dark:text-white">What should the farmer do today?</h2>
+                                <h2 className="font-bold text-gray-900 dark:text-white">{t('weather.farmer_action', 'What should the farmer do today?')}</h2>
                                 {isGenerating && <Loader2 className="w-4 h-4 text-primary-400 animate-spin ml-2" />}
                             </div>
 
@@ -232,7 +263,7 @@ Tomorrow's Forecast: ${data.daily[1].high}°C, ${data.daily[1].rain}% chance of 
                                 {advisoryStream ? (
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{advisoryStream}</ReactMarkdown>
                                 ) : (
-                                    <p className="text-gray-400 italic">Analyzing meteorological data to formulate advisory...</p>
+                                    <p className="text-gray-400 italic">{t('weather.analyzing_meteorological', 'Analyzing meteorological data to formulate advisory...')}</p>
                                 )}
                             </div>
                         </Card>
@@ -242,7 +273,7 @@ Tomorrow's Forecast: ${data.daily[1].high}°C, ${data.daily[1].rain}% chance of 
                         {/* Hourly Forecast */}
                         <div className="lg:col-span-8">
                             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-                                <h2 className="section-title mb-3">Hourly Forecast</h2>
+                                <h2 className="section-title mb-3">{t('weather.hourly_forecast', 'Hourly Forecast')}</h2>
                                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                                     {weatherData.hourly.map((h, i) => (
                                         <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 p-4 rounded-2xl border w-24 bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 text-gray-700 dark:text-gray-300">
@@ -259,7 +290,7 @@ Tomorrow's Forecast: ${data.daily[1].high}°C, ${data.daily[1].rain}% chance of 
                         {/* 7-Day Forecast */}
                         <div className="lg:col-span-4">
                             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                                <h2 className="section-title mb-3">7-Day Forecast</h2>
+                                <h2 className="section-title mb-3">{t('weather.7day_forecast', '7-Day Forecast')}</h2>
                                 <Card className="divide-y divide-gray-100 dark:divide-slate-700">
                                     {weatherData.daily.map((day, i) => (
                                         <div key={i} onClick={() => setActiveDay(i)} className={cn('flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors', activeDay === i ? 'bg-primary-50 dark:bg-primary-900/10' : 'hover:bg-gray-50 dark:hover:bg-slate-700/50')}>

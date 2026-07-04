@@ -62,7 +62,7 @@ interface ChatItem {
 }
 
 const Dashboard: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const quickActions: QuickActionItem[] = [
     { icon: <Leaf className="w-5 h-5" />, labelKey: 'dashboard.scan_crop', defaultLabel: 'Scan Disease', path: '/disease', color: 'bg-rose-500/10 text-rose-500 border border-rose-500/20', hoverColor: 'hover:bg-rose-500/20' },
@@ -74,36 +74,36 @@ const Dashboard: React.FC = () => {
   ];
 
   const diseaseReports: AlertItem[] = [
-    { type: 'danger', icon: '🐛', message: 'High pest alert: Fall armyworm reported in Lucknow region.', time: '1d ago' },
-    { type: 'warning', icon: '🍂', message: 'Late blight symptoms found in neighboring potato fields.', time: '2d ago' },
+    { type: 'danger', icon: '🐛', message: t('dashboard.alert_pest', 'High pest alert: Fall armyworm reported in Lucknow region.'), time: t('time.1d_ago', '1d ago') },
+    { type: 'warning', icon: '🍂', message: t('dashboard.alert_blight', 'Late blight symptoms found in neighboring potato fields.'), time: t('time.2d_ago', '2d ago') },
   ];
 
   const recentCrops: CropItem[] = [
-    { name: 'Wheat', stage: 'Ripening', health: 92, area: '3.5 acres', nextAction: 'Harvest in 12 days' },
-    { name: 'Tomato', stage: 'Flowering', health: 78, area: '1.2 acres', nextAction: 'Apply fungicide' },
-    { name: 'Mustard', stage: 'Seedling', health: 95, area: '2.0 acres', nextAction: 'First watering due' },
+    { name: t('crops.wheat', 'Wheat'), stage: t('crop_stages.ripening', 'Ripening'), health: 92, area: `3.5 ${t('ui.acres', 'acres')}`, nextAction: t('actions.harvest_12_days', 'Harvest in 12 days') },
+    { name: t('crops.tomato', 'Tomato'), stage: t('crop_stages.flowering', 'Flowering'), health: 78, area: `1.2 ${t('ui.acres', 'acres')}`, nextAction: t('actions.apply_fungicide', 'Apply fungicide') },
+    { name: t('crops.mustard', 'Mustard'), stage: t('crop_stages.seedling', 'Seedling'), health: 95, area: `2.0 ${t('ui.acres', 'acres')}`, nextAction: t('actions.first_watering', 'First watering due') },
   ];
 
   const marketPrices: MarketItem[] = [
-    { crop: '🌾 Wheat', price: '₹2,340', change: '+₹120', positive: true, unit: '/qtl' },
-    { crop: '🍅 Tomato', price: '₹1,800', change: '-₹200', positive: false, unit: '/qtl' },
-    { crop: '🧅 Onion', price: '₹1,200', change: '+₹80', positive: true, unit: '/qtl' },
+    { crop: `🌾 ${t('crops.wheat', 'Wheat')}`, price: '₹2,340', change: '+₹120', positive: true, unit: t('ui.qtl', '/qtl') },
+    { crop: `🍅 ${t('crops.tomato', 'Tomato')}`, price: '₹1,800', change: '-₹200', positive: false, unit: t('ui.qtl', '/qtl') },
+    { crop: `🧅 ${t('crops.onion', 'Onion')}`, price: '₹1,200', change: '+₹80', positive: true, unit: t('ui.qtl', '/qtl') },
   ];
 
   const reminders: ReminderItem[] = [
-    { id: '1', task: 'Water Tomato crop (Flower stage)', due: 'Today, 4:00 PM', done: false },
-    { id: '2', task: 'Check Wheat moisture content', due: 'Tomorrow', done: false },
-    { id: '3', task: 'Apply NPK Fertilizer to Mustard', due: 'Jul 8', done: true },
+    { id: '1', task: t('reminders.task_water_tomato', 'Water Tomato crop (Flower stage)'), due: t('time.today_4pm', 'Today, 4:00 PM'), done: false },
+    { id: '2', task: t('reminders.task_check_wheat', 'Check Wheat moisture content'), due: t('time.tomorrow', 'Tomorrow'), done: false },
+    { id: '3', task: t('reminders.task_apply_npk', 'Apply NPK Fertilizer to Mustard'), due: t('time.jul8', 'Jul 8'), done: true },
   ];
 
   const aiSuggestions: SuggestionItem[] = [
-    { title: 'Early Harvesting Advised', desc: 'Rainfall expected in 48 hours. Secure mature wheat crop immediately.', impact: 'High Impact' },
-    { title: 'Fungicide schedule', desc: 'Moist weather increases fungal risk for flowering tomato beds.', impact: 'Medium Impact' },
+    { title: t('suggestions.early_harvest_title', 'Early Harvesting Advised'), desc: t('suggestions.early_harvest_desc', 'Rainfall expected in 48 hours. Secure mature wheat crop immediately.'), impact: t('suggestions.impact_high', 'High Impact') },
+    { title: t('suggestions.fungicide_title', 'Fungicide schedule'), desc: t('suggestions.fungicide_desc', 'Moist weather increases fungal risk for flowering tomato beds.'), impact: t('suggestions.impact_medium', 'Medium Impact') },
   ];
 
   const recentConversations: ChatItem[] = [
-    { id: '1', query: 'How to manage leaf spot in tomatoes?', time: '3h ago' },
-    { id: '2', query: 'Best NPK ratio for seed germination', time: 'Yesterday' },
+    { id: '1', query: t('chats.query_leaf_spot', 'How to manage leaf spot in tomatoes?'), time: t('time.3h_ago', '3h ago') },
+    { id: '2', query: t('chats.query_npk_ratio', 'Best NPK ratio for seed germination'), time: t('time.yesterday', 'Yesterday') },
   ];
 
   const containerVariants = {
@@ -126,19 +126,19 @@ const Dashboard: React.FC = () => {
       {/* SaaS Premium Header Bar */}
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
         <div>
-          <p className="text-gray-400 dark:text-gray-500 text-xs font-semibold uppercase tracking-wider">{getGreeting()}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-xs font-semibold uppercase tracking-wider">{t('dashboard.welcome', 'Welcome back')}</p>
           <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white font-display mt-0.5">Ramesh Singh 👋</h1>
           <div className="flex items-center gap-2 mt-1">
             <MapPin className="w-4 h-4 text-primary-500" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Lucknow, Uttar Pradesh</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('location.lucknow', 'Lucknow, Uttar Pradesh')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-800/50 p-2 rounded-xl border border-gray-100 dark:border-slate-800">
           <CalendarDays className="w-5 h-5 text-gray-500" />
           <div className="text-left">
-            <p className="text-[10px] text-gray-400 uppercase font-semibold">System Time</p>
+            <p className="text-[10px] text-gray-400 uppercase font-semibold">{t('dashboard.system_time', 'System Time')}</p>
             <p className="font-bold text-gray-900 dark:text-white text-xs">
-              {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {new Date().toLocaleDateString(i18n.language === 'hi' ? 'hi-IN' : i18n.language === 'bn' ? 'bn-IN' : 'en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
         </div>
@@ -160,8 +160,8 @@ const Dashboard: React.FC = () => {
                 
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-xs font-semibold bg-white/20 px-2.5 py-1 rounded-full uppercase tracking-wider text-white">Weather Today</span>
-                    <h3 className="text-sm text-white/80 mt-2 font-medium">Partly Cloudy</h3>
+                    <span className="text-xs font-semibold bg-white/20 px-2.5 py-1 rounded-full uppercase tracking-wider text-white">{t('dashboard.weather_today', 'Weather Today')}</span>
+                    <h3 className="text-sm text-white/80 mt-2 font-medium">{t('weather.partly_cloudy', 'Partly Cloudy')}</h3>
                   </div>
                   <span className="text-4xl">⛅</span>
                 </div>
@@ -172,7 +172,7 @@ const Dashboard: React.FC = () => {
                     <span className="text-xl ml-1">C</span>
                   </div>
                   <div className="flex gap-4 mt-3 text-xs text-white/70">
-                    <div className="flex items-center gap-1"><Wind className="w-3.5 h-3.5" /> 12 km/h</div>
+                    <div className="flex items-center gap-1"><Wind className="w-3.5 h-3.5" /> 12 {t('ui.kmh', 'km/h')}</div>
                     <div className="flex items-center gap-1"><Droplets className="w-3.5 h-3.5" /> 68%</div>
                   </div>
                 </div>
@@ -180,7 +180,7 @@ const Dashboard: React.FC = () => {
                 <div className="grid grid-cols-4 gap-2 mt-4 pt-3 border-t border-white/10">
                   {['Mon', 'Tue', 'Wed', 'Thu'].map((day, i) => (
                     <div key={day} className="text-center">
-                      <p className="text-[10px] text-white/50">{day}</p>
+                      <p className="text-[10px] text-white/50">{t(`days.${day.toLowerCase()}`, day)}</p>
                       <p className="text-sm my-0.5">{['⛅', '☁️', '🌧️', '☀️'][i]}</p>
                       <p className="text-xs font-bold text-white">{[28, 26, 24, 31][i]}°</p>
                     </div>
@@ -193,7 +193,7 @@ const Dashboard: React.FC = () => {
             <motion.div variants={itemVariants}>
               <Card className="p-6 h-full flex flex-col justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400 mb-3">Quick Actions</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400 mb-3">{t('dashboard.quick_actions', 'Quick Actions')}</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {quickActions.map((action) => (
                       <Link
@@ -217,11 +217,11 @@ const Dashboard: React.FC = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">Crop Health Index</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Active crop metrics & diagnostics</p>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">{t('dashboard.crop_health_index', 'Crop Health Index')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.crop_metrics', 'Active crop metrics & diagnostics')}</p>
                 </div>
                 <Link to="/crop-guide" className="text-primary-600 dark:text-primary-400 text-xs font-bold hover:underline flex items-center gap-0.5">
-                  Analyze Crops <ChevronRight className="w-4 h-4" />
+                  {t('dashboard.analyze_crops', 'Analyze Crops')} <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
 
@@ -245,7 +245,7 @@ const Dashboard: React.FC = () => {
                           style={{ width: `${crop.health}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-gray-400 font-medium truncate">Next Action: {crop.nextAction}</p>
+                      <p className="text-[10px] text-gray-400 font-medium truncate">{t('ui.next', 'Next')}: {crop.nextAction}</p>
                     </div>
                   </div>
                 ))}
@@ -265,8 +265,8 @@ const Dashboard: React.FC = () => {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">Gemma AI Suggestions</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Real-time advisory suggestions</p>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">{t('dashboard.ai_suggestions', 'Gemma AI Suggestions')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.realtime_advisory', 'Real-time advisory suggestions')}</p>
                 </div>
               </div>
 
@@ -298,11 +298,11 @@ const Dashboard: React.FC = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">Market Today</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Current Mandi rates</p>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">{t('dashboard.market_today', 'Market Today')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('dashboard.current_mandi', 'Current Mandi rates')}</p>
                 </div>
                 <Link to="/market" className="text-primary-600 dark:text-primary-400 text-xs font-bold hover:underline">
-                  View All
+                  {t('dashboard.view_all', 'View All')}
                 </Link>
               </div>
 
@@ -327,11 +327,11 @@ const Dashboard: React.FC = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">Reminders</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Task schedules</p>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">{t('nav.reminders', 'Reminders')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('dashboard.task_schedules', 'Task schedules')}</p>
                 </div>
                 <Link to="/reminders" className="text-primary-600 dark:text-primary-400 text-xs font-bold hover:underline">
-                  Manage
+                  {t('ui.manage', 'Manage')}
                 </Link>
               </div>
 
@@ -356,11 +356,11 @@ const Dashboard: React.FC = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">Recent Chats</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">AI Consultations</p>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">{t('dashboard.recent_chats', 'Recent Chats')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('dashboard.ai_consultations', 'AI Consultations')}</p>
                 </div>
                 <Link to="/chat" className="text-primary-600 dark:text-primary-400 text-xs font-bold hover:underline">
-                  New Chat
+                  {t('dashboard.new_chat', 'New Chat')}
                 </Link>
               </div>
 
@@ -379,7 +379,7 @@ const Dashboard: React.FC = () => {
           <motion.div variants={itemVariants}>
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">Disease Warnings</h3>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider text-slate-400">{t('dashboard.disease_warnings', 'Disease Warnings')}</h3>
                 <AlertTriangle className="w-4 h-4 text-rose-500 animate-pulse" />
               </div>
               <div className="space-y-2.5">

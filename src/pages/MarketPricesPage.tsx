@@ -15,6 +15,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '../contexts/AuthContext';
 import type { SupportedLanguage } from '../api/ai/prompts';
+import { useTranslation } from 'react-i18next';
 
 interface CropData {
   crop: string;
@@ -51,8 +52,13 @@ const priceHistory = [
 const mandis = ['All Mandis', 'Lucknow', 'Kanpur', 'Varanasi', 'Agra', 'Jhansi'];
 
 export default function MarketPricesPage() {
-  const { profile } = useAuth();
-  const selectedLanguage = (profile?.preferred_language as SupportedLanguage) || 'English';
+  const { t, i18n } = useTranslation();
+  const getAI_Language = (code: string): SupportedLanguage => {
+    if (code.startsWith('hi')) return 'Hindi';
+    if (code.startsWith('bn')) return 'Bengali';
+    return 'English';
+  };
+  const selectedLanguage = getAI_Language(i18n.language);
 
   const [search, setSearch] = useState('');
   const [selectedMandi, setSelectedMandi] = useState('All Mandis');
@@ -128,12 +134,12 @@ export default function MarketPricesPage() {
   return (
     <div className="page-container max-w-6xl mx-auto">
       <PageHeader
-        title="Market Prices"
-        subtitle="Live Mandi rates & AI market intelligence"
+        title={t('nav.market_prices', 'Market Prices')}
+        subtitle={t('market.subtitle', 'Live Mandi rates & AI market intelligence')}
         action={
           <button className="btn-secondary flex items-center gap-2 text-xs py-2">
             <Bell className="w-3.5 h-3.5" />
-            Price Alerts
+            {t('market.price_alerts', 'Price Alerts')}
           </button>
         }
       />
@@ -146,19 +152,19 @@ export default function MarketPricesPage() {
             {!selectedCrop && (
                 <div className="grid grid-cols-3 gap-4 mb-6">
                     <Card className="p-4 text-center">
-                    <p className="text-xs text-gray-400 mb-1">Markets Today</p>
+                    <p className="text-xs text-gray-400 mb-1">{t('market.markets_today', 'Markets Today')}</p>
                     <p className="text-xl font-bold text-gray-900 dark:text-white">247</p>
-                    <p className="text-xs text-green-500">+12 active</p>
+                    <p className="text-xs text-green-500">+12 {t('market.active', 'active')}</p>
                     </Card>
                     <Card className="p-4 text-center">
-                    <p className="text-xs text-gray-400 mb-1">Gainers</p>
+                    <p className="text-xs text-gray-400 mb-1">{t('market.gainers', 'Gainers')}</p>
                     <p className="text-xl font-bold text-green-600">{topGainers.length}</p>
-                    <p className="text-xs text-gray-400">trending up</p>
+                    <p className="text-xs text-gray-400">{t('market.trending_up', 'trending up')}</p>
                     </Card>
                     <Card className="p-4 text-center">
-                    <p className="text-xs text-gray-400 mb-1">Losers</p>
+                    <p className="text-xs text-gray-400 mb-1">{t('market.losers', 'Losers')}</p>
                     <p className="text-xl font-bold text-red-500">{topLosers.length}</p>
-                    <p className="text-xs text-gray-400">trending down</p>
+                    <p className="text-xs text-gray-400">{t('market.trending_down', 'trending down')}</p>
                     </Card>
                 </div>
             )}
@@ -169,7 +175,7 @@ export default function MarketPricesPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search crop..."
+                        placeholder={t('market.search_crop', 'Search crop...')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="input-field pl-10"
@@ -180,7 +186,7 @@ export default function MarketPricesPage() {
                     onChange={(e) => setSelectedMandi(e.target.value)}
                     className="input-field w-auto"
                 >
-                    {mandis.map(m => <option key={m}>{m}</option>)}
+                    {mandis.map(m => <option key={m}>{m === 'All Mandis' ? t('market.all_mandis', 'All Mandis') : m}</option>)}
                 </select>
                 <button
                     onClick={() => setShowOnlyStarred(!showOnlyStarred)}
@@ -192,7 +198,7 @@ export default function MarketPricesPage() {
                     )}
                 >
                     <Star className={cn('w-4 h-4', showOnlyStarred ? 'fill-amber-400 text-amber-400' : '')} />
-                    Watchlist
+                    {t('market.watchlist', 'Watchlist')}
                 </button>
             </div>
 
@@ -201,11 +207,11 @@ export default function MarketPricesPage() {
                     <table className="w-full">
                     <thead>
                         <tr className="bg-gray-50 dark:bg-slate-700/50 text-left">
-                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Crop</th>
-                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Market</th>
-                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Price</th>
-                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Change</th>
-                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Watch</th>
+                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('market.th_crop', 'Crop')}</th>
+                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('market.th_market', 'Market')}</th>
+                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">{t('market.th_price', 'Price')}</th>
+                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">{t('market.th_change', 'Change')}</th>
+                        <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">{t('market.th_watch', 'Watch')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
@@ -224,7 +230,9 @@ export default function MarketPricesPage() {
                         >
                             <td className="px-5 py-4">
                             <div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">{item.crop}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {item.crop.startsWith('🌾') ? `🌾 ${t('crops.wheat', 'Wheat')}` : item.crop.startsWith('🍅') ? `🍅 ${t('crops.tomato', 'Tomato')}` : item.crop.startsWith('🧅') ? `🧅 ${t('crops.onion', 'Onion')}` : item.crop}
+                                </p>
                                 <p className="text-xs text-gray-400">{item.variety}</p>
                             </div>
                             </td>
@@ -281,9 +289,9 @@ export default function MarketPricesPage() {
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    {selectedCrop.crop} Trend
+                                    {selectedCrop.crop.startsWith('🌾') ? `🌾 ${t('crops.wheat', 'Wheat')}` : selectedCrop.crop.startsWith('🍅') ? `🍅 ${t('crops.tomato', 'Tomato')}` : selectedCrop.crop.startsWith('🧅') ? `🧅 ${t('crops.onion', 'Onion')}` : selectedCrop.crop} {t('market.trend', 'Trend')}
                                 </h2>
-                                <p className="text-xs text-gray-400">6-Month historical price (₹/quintal)</p>
+                                <p className="text-xs text-gray-400">{t('market.six_month_history', '6-Month historical price (₹/quintal)')}</p>
                             </div>
                             <button onClick={() => setSelectedCrop(null)} className="p-1 hover:bg-gray-100 rounded-lg text-gray-400">
                                 <X className="w-4 h-4" />
@@ -314,12 +322,11 @@ export default function MarketPricesPage() {
                         </div>
                     </Card>
 
-                    {/* AI Market Intelligence */}
                     <Card className="p-5 border border-primary-100 dark:border-primary-900/50 bg-primary-50/30 dark:bg-primary-900/10 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-1 h-full bg-primary-500"></div>
                         <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
                             <Sparkles className="w-5 h-5 text-primary-500" />
-                            AI Market Intelligence
+                            {t('market.ai_intelligence', 'AI Market Intelligence')}
                             {isGenerating && <Loader2 className="w-4 h-4 text-primary-400 animate-spin ml-auto" />}
                         </h3>
                         
@@ -327,22 +334,23 @@ export default function MarketPricesPage() {
                             {aiStream ? (
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiStream}</ReactMarkdown>
                             ) : (
-                                <p className="text-gray-400 italic">Analyzing market dynamics, supply trends, and seasonal demand for {selectedCrop.crop}...</p>
+                                <p className="text-gray-400 italic">
+                                    {t('market.analyzing_dynamics', 'Analyzing dynamics for')} {selectedCrop.crop.startsWith('🌾') ? t('crops.wheat', 'Wheat') : selectedCrop.crop.startsWith('🍅') ? t('crops.tomato', 'Tomato') : selectedCrop.crop.startsWith('🧅') ? t('crops.onion', 'Onion') : selectedCrop.crop}...
+                                </p>
                             )}
                         </div>
                     </Card>
 
-                    {/* Nearby Markets Widget */}
                     <Card className="p-5">
                         <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4 text-sm">
                             <Store className="w-4 h-4 text-amber-500" />
-                            Nearby Markets ({selectedCrop.crop.split(' ')[1]})
+                            {t('market.nearby_markets', 'Nearby Markets')}
                         </h3>
                         <div className="space-y-3">
                             <div className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700">
                                 <div>
-                                    <p className="text-sm font-medium">Kanpur Mandi</p>
-                                    <p className="text-xs text-gray-500">45 km away</p>
+                                    <p className="text-sm font-medium">{t('market.kanpur_mandi', 'Kanpur Mandi')}</p>
+                                    <p className="text-xs text-gray-500">45 {t('ui.km_away', 'km away')}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-bold text-gray-900 dark:text-white">₹{selectedCrop.price + 80}</p>
@@ -351,8 +359,8 @@ export default function MarketPricesPage() {
                             </div>
                             <div className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700">
                                 <div>
-                                    <p className="text-sm font-medium">Unnao Market</p>
-                                    <p className="text-xs text-gray-500">22 km away</p>
+                                    <p className="text-sm font-medium">{t('market.unnao_market', 'Unnao Market')}</p>
+                                    <p className="text-xs text-gray-500">22 {t('ui.km_away', 'km away')}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-bold text-gray-900 dark:text-white">₹{selectedCrop.price - 40}</p>
@@ -375,13 +383,13 @@ export default function MarketPricesPage() {
                     <Card className="p-5">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                            <h2 className="font-semibold text-gray-900 dark:text-white text-sm">6-Month Price Trends</h2>
-                            <p className="text-xs text-gray-400">Wheat • Tomato • Onion (₹/quintal)</p>
+                            <h2 className="font-semibold text-gray-900 dark:text-white text-sm">{t('market.six_month_trends', '6-Month Price Trends')}</h2>
+                            <p className="text-xs text-gray-400">{t('crops.wheat', 'Wheat')} • {t('crops.tomato', 'Tomato')} • {t('crops.onion', 'Onion')} (₹/quintal)</p>
                             </div>
                             <div className="flex gap-3 text-xs">
-                            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-green-600 rounded-full inline-block" />Wheat</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-red-500 rounded-full inline-block" />Tomato</span>
-                            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-amber-500 rounded-full inline-block" />Onion</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-green-600 rounded-full inline-block" />{t('crops.wheat', 'Wheat')}</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-red-500 rounded-full inline-block" />{t('crops.tomato', 'Tomato')}</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-amber-500 rounded-full inline-block" />{t('crops.onion', 'Onion')}</span>
                             </div>
                         </div>
                         <ResponsiveContainer width="100%" height={250}>
