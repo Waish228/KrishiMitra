@@ -95,8 +95,8 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
 
       onEndRef.current = onEnd;
 
-      const doSpeak = () => {
-        console.log('TTS starting with text:', cleanText);
+      const speakWithRetry = (attempt = 1) => {
+        console.log(`TTS starting attempt ${attempt} with text:`, cleanText);
         const utterance = new SpeechSynthesisUtterance(cleanText);
         const voice = findBestVoice(language);
         if (voice) {
@@ -126,11 +126,19 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
         };
 
         utterance.onerror = (e) => {
-          console.error('TTS error event:', e.error, e);
-          toast.error(`Browser voice error: ${e.error}`, { id: 'tts-toast', duration: 4000 });
-          setIsSpeaking(false);
-          onEndRef.current = undefined;
-          utteranceRef.current = null;
+          console.error(`TTS error event on attempt ${attempt}:`, e.error, e);
+          if (attempt < 10) {
+            console.log(`Retrying speech synthesis (attempt ${attempt + 1})...`);
+            window.speechSynthesis.cancel();
+            setTimeout(() => {
+              speakWithRetry(attempt + 1);
+            }, 400);
+          } else {
+            toast.error(`Browser voice error: ${e.error || 'synthesis-failed'}`, { id: 'tts-toast', duration: 4000 });
+            setIsSpeaking(false);
+            onEndRef.current = undefined;
+            utteranceRef.current = null;
+          }
         };
 
         utteranceRef.current = utterance;
@@ -138,19 +146,26 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
         try {
           window.speechSynthesis.speak(utterance);
         } catch (err: any) {
-          toast.error(`Speech failed: ${err.message}`, { id: 'tts-toast' });
+          if (attempt < 10) {
+            window.speechSynthesis.cancel();
+            setTimeout(() => {
+              speakWithRetry(attempt + 1);
+            }, 400);
+          } else {
+            toast.error(`Speech failed: ${err.message}`, { id: 'tts-toast' });
+          }
         }
       };
 
       // In Chrome, if voices are empty, they might load later, but we shouldn't completely block speech
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
-        doSpeak();
+        speakWithRetry();
       } else {
         console.log('TTS voices not loaded yet, attaching voiceschanged listener and trying anyway...');
-        window.speechSynthesis.addEventListener('voiceschanged', doSpeak, { once: true });
+        window.speechSynthesis.addEventListener('voiceschanged', () => speakWithRetry(), { once: true });
         // Fallback: Try speaking anyway just in case the browser supports it without explicitly loading the voice list
-        doSpeak();
+        speakWithRetry();
       }
     },
     [isSupported]

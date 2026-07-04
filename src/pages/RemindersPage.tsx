@@ -304,22 +304,22 @@ export default function RemindersPage() {
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('reminders.form_type', 'Type')}</label>
                     <div className="grid grid-cols-2 gap-2">
-                      {reminderTypes.map(t => {
-                        const Icon = t.icon;
+                      {reminderTypes.map(typeItem => {
+                        const Icon = typeItem.icon;
                         return (
                           <button
                             type="button"
-                            key={t.id}
-                            onClick={() => setNewType(t.id as Reminder['type'])}
+                            key={typeItem.id}
+                            onClick={() => setNewType(typeItem.id as Reminder['type'])}
                             className={cn(
                               "flex items-center gap-2 p-2 rounded-xl border text-xs font-medium transition-all",
-                              newType === t.id 
-                                ? cn(t.bg, t.color, "border-transparent")
+                              newType === typeItem.id 
+                                ? cn(typeItem.bg, typeItem.color, "border-transparent")
                                 : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400"
                             )}
                           >
                             <Icon className="w-3 h-3" />
-                            {t(t.labelKey, t.label)}
+                            {t(typeItem.labelKey, typeItem.label)}
                           </button>
                         );
                       })}

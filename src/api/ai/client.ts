@@ -10,7 +10,7 @@ const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY,
 });
 
-async function generateContentWithRetry(params: any, maxRetries = 5, delayMs = 800): Promise<any> {
+async function generateContentWithRetry(params: any, maxRetries = 10, delayMs = 800): Promise<any> {
   let lastError: any = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
