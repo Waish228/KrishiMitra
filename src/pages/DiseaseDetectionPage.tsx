@@ -1,85 +1,109 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Camera, Leaf, AlertTriangle, CheckCircle,
-  XCircle, ChevronRight, Sparkles, RefreshCw, Info
+  XCircle, RefreshCw, Info, Save, Sparkles
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { Card, Badge, Button, PageHeader } from '../components/ui/Components';
 import { cn } from '../lib/utils';
-
-interface DetectionResult {
-  disease: string;
-  confidence: number;
-  severity: 'low' | 'medium' | 'high';
-  description: string;
-  symptoms: string[];
-  treatment: string[];
-  prevention: string[];
-  affectedArea: number;
-}
-
-const mockResult: DetectionResult = {
-  disease: 'Wheat Leaf Rust (Puccinia triticina)',
-  confidence: 94,
-  severity: 'high',
-  description: 'Wheat leaf rust is a fungal disease characterized by orange-brown pustules on leaves. It spreads rapidly under warm, humid conditions and can cause significant yield loss.',
-  symptoms: [
-    'Orange-brown powdery pustules on upper leaf surface',
-    'Yellow halos around pustules',
-    'Premature leaf senescence',
-    'Reduced grain filling',
-  ],
-  treatment: [
-    'Apply Propiconazole 25% EC @ 1ml/L water immediately',
-    'Spray Tebuconazole 250 EC @ 1ml/L as alternative',
-    'Repeat application after 15-20 days if disease persists',
-    'Ensure complete leaf coverage during spraying',
-  ],
-  prevention: [
-    'Plant rust-resistant varieties (HD 3086, DBW 187)',
-    'Avoid excess nitrogen application',
-    'Ensure proper plant spacing for air circulation',
-    'Monitor crop weekly during March-April',
-  ],
-  affectedArea: 35,
-};
-
-const recentScans = [
-  { crop: 'Tomato', disease: 'Early Blight', date: '2 days ago', severity: 'medium' as const },
-  { crop: 'Mustard', disease: 'Healthy', date: '5 days ago', severity: 'low' as const },
-  { crop: 'Wheat', disease: 'Stem Rust', date: '1 week ago', severity: 'high' as const },
-];
+import { useAuth } from '../contexts/AuthContext';
+import { AI_CONFIG } from '../api/ai/config';
+import { analyzeCropImage, type DiseaseDetectionResult } from '../api/ai/client';
+import { saveDiseaseReport, getRecentDiseaseReports, type DiseaseReport } from '../api/disease';
+import type { SupportedLanguage } from '../api/ai/prompts';
 
 const DiseaseDetectionPage: React.FC = () => {
+  const { user, profile } = useAuth();
+  
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [mimeType, setMimeType] = useState<string>('image/jpeg');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [result, setResult] = useState<DetectionResult | null>(null);
+  const [result, setResult] = useState<DiseaseDetectionResult | null>(null);
   const [activeTab, setActiveTab] = useState<'treatment' | 'prevention'>('treatment');
+  const [recentScans, setRecentScans] = useState<DiseaseReport[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const userLanguage = (profile?.preferred_language as SupportedLanguage) || AI_CONFIG.defaultLanguage;
+
+  useEffect(() => {
+    if (user) {
+      loadRecentScans();
+    }
+  }, [user]);
+
+  const loadRecentScans = async () => {
+    if (!user) return;
+    try {
+      const scans = await getRecentDiseaseReports(user.uid);
+      setRecentScans(scans);
+    } catch (error) {
+      console.error('Error loading scans:', error);
+    }
+  };
 
   const handleImageUpload = (file: File) => {
+    // Basic validation
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast.error('Image size must be less than 5MB.');
+      return;
+    }
+
+    setMimeType(file.type);
+    
+    // Convert to base64
     const reader = new FileReader();
     reader.onload = (e) => {
-      setUploadedImage(e.target?.result as string);
-      analyzeImage();
+      const base64Str = e.target?.result as string;
+      setUploadedImage(base64Str);
+      analyzeImage(base64Str, file.type);
     };
     reader.readAsDataURL(file);
   };
 
-  const analyzeImage = async () => {
+  const analyzeImage = async (base64Str: string, mime: string) => {
     setIsAnalyzing(true);
     setResult(null);
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setResult(mockResult);
-    setIsAnalyzing(false);
+    try {
+      const diagnosis = await analyzeCropImage(base64Str, mime, userLanguage);
+      setResult(diagnosis);
+      toast.success('Analysis complete!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to analyze the image.');
+      setUploadedImage(null);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file?.type.startsWith('image/')) handleImageUpload(file);
+    if (file) handleImageUpload(file);
+  };
+
+  const handleSaveReport = async () => {
+    if (!user || !result) return;
+    setIsSaving(true);
+    try {
+      await saveDiseaseReport(user.uid, result);
+      toast.success('Report saved successfully!');
+      loadRecentScans(); // Refresh list
+    } catch (error) {
+      console.error('Error saving report:', error);
+      toast.error('Failed to save report.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const severityConfig = {
@@ -96,7 +120,7 @@ const DiseaseDetectionPage: React.FC = () => {
         action={
           <Badge variant="green">
             <Sparkles className="w-3 h-3 mr-1" />
-            Gemini AI
+            {AI_CONFIG.modelDisplayName}
           </Badge>
         }
       />
@@ -116,8 +140,13 @@ const DiseaseDetectionPage: React.FC = () => {
                   ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10'
                   : 'border-gray-200 dark:border-slate-600 hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-slate-700/50'
               )}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (!isAnalyzing && !uploadedImage) {
+                  fileInputRef.current?.click();
+                }
+              }}
             >
+              {/* Standard File Upload */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -125,6 +154,17 @@ const DiseaseDetectionPage: React.FC = () => {
                 className="hidden"
                 onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
                 id="disease-image-upload"
+              />
+              
+              {/* Camera Upload specifically for mobile */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+                id="disease-camera-upload"
               />
 
               {uploadedImage ? (
@@ -135,11 +175,11 @@ const DiseaseDetectionPage: React.FC = () => {
                     className="w-full h-full object-cover rounded-xl"
                   />
                   {isAnalyzing && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl">
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl backdrop-blur-sm">
                       <div className="text-center text-white">
                         <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-3" />
-                        <p className="font-medium text-sm">Analyzing with AI...</p>
-                        <p className="text-xs text-white/70 mt-1">Checking 50,000+ disease patterns</p>
+                        <p className="font-medium text-sm">Analyzing with {AI_CONFIG.modelDisplayName}...</p>
+                        <p className="text-xs text-white/70 mt-1">Checking disease patterns</p>
                       </div>
                     </div>
                   )}
@@ -156,7 +196,7 @@ const DiseaseDetectionPage: React.FC = () => {
                     Drag & drop or click to browse
                   </p>
                   <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">
-                    Supports JPG, PNG, HEIC up to 10MB
+                    Supports JPG, PNG up to 5MB
                   </p>
                 </div>
               )}
@@ -166,9 +206,10 @@ const DiseaseDetectionPage: React.FC = () => {
               <Button
                 variant="secondary"
                 icon={<Camera className="w-4 h-4" />}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => cameraInputRef.current?.click()}
                 className="w-full"
                 id="camera-btn"
+                disabled={isAnalyzing}
               >
                 Take Photo
               </Button>
@@ -178,6 +219,7 @@ const DiseaseDetectionPage: React.FC = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full"
                 id="gallery-btn"
+                disabled={isAnalyzing}
               >
                 Gallery
               </Button>
@@ -193,7 +235,6 @@ const DiseaseDetectionPage: React.FC = () => {
               <li className="flex items-start gap-2">📸 Take photos in natural light</li>
               <li className="flex items-start gap-2">🔍 Capture affected leaves close-up</li>
               <li className="flex items-start gap-2">📐 Include both healthy and affected parts</li>
-              <li className="flex items-start gap-2">🌿 Upload multiple photos for better accuracy</li>
             </ul>
           </Card>
 
@@ -201,27 +242,34 @@ const DiseaseDetectionPage: React.FC = () => {
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Recent Scans</h3>
             <div className="space-y-2">
-              {recentScans.map((scan, i) => {
-                const config = severityConfig[scan.severity];
-                const Icon = config.icon;
-                return (
-                  <Card key={i} className="p-3 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer">
-                    <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', config.bg)}>
-                      <Icon className={cn('w-4 h-4', config.color)} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{scan.crop}</p>
-                      <p className="text-xs text-gray-400 truncate">{scan.disease}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <Badge variant={scan.severity === 'low' ? 'green' : scan.severity === 'medium' ? 'yellow' : 'red'}>
-                        {config.label}
-                      </Badge>
-                      <p className="text-xs text-gray-400 mt-1">{scan.date}</p>
-                    </div>
-                  </Card>
-                );
-              })}
+              {recentScans.length === 0 ? (
+                <div className="text-sm text-gray-500 text-center py-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                  No recent scans found.
+                </div>
+              ) : (
+                recentScans.map((scan) => {
+                  const config = severityConfig[scan.severity];
+                  const Icon = config.icon;
+                  return (
+                    <Card key={scan.id} className="p-3 flex items-center gap-3 hover:shadow-md transition-shadow cursor-pointer">
+                      <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', config.bg)}>
+                        <Icon className={cn('w-4 h-4', config.color)} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{scan.disease}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {new Date(scan.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <Badge variant={scan.severity === 'low' ? 'green' : scan.severity === 'medium' ? 'yellow' : 'red'}>
+                          {config.label}
+                        </Badge>
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -267,6 +315,7 @@ const DiseaseDetectionPage: React.FC = () => {
                     <button
                       onClick={() => { setResult(null); setUploadedImage(null); }}
                       className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                      title="Scan Another"
                     >
                       <RefreshCw className="w-4 h-4" />
                     </button>
@@ -300,17 +349,19 @@ const DiseaseDetectionPage: React.FC = () => {
                 </Card>
 
                 {/* Symptoms */}
-                <Card className="p-4">
-                  <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">🔍 Symptoms Observed</h4>
-                  <ul className="space-y-2">
-                    {result.symptoms.map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="text-red-400 mt-0.5 flex-shrink-0">•</span>
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
+                {result.symptoms && result.symptoms.length > 0 && (
+                  <Card className="p-4">
+                    <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">🔍 Symptoms Observed</h4>
+                    <ul className="space-y-2">
+                      {result.symptoms.map((s, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <span className="text-red-400 mt-0.5 flex-shrink-0">•</span>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
 
                 {/* Treatment / Prevention Tabs */}
                 <Card className="overflow-hidden">
@@ -333,7 +384,7 @@ const DiseaseDetectionPage: React.FC = () => {
                   </div>
                   <div className="p-4">
                     <ul className="space-y-3">
-                      {(activeTab === 'treatment' ? result.treatment : result.prevention).map((item, i) => (
+                      {(activeTab === 'treatment' ? (result.treatment || []) : (result.prevention || [])).map((item, i) => (
                         <li key={i} className="flex items-start gap-3 text-sm">
                           <span className="w-5 h-5 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                             {i + 1}
@@ -342,16 +393,25 @@ const DiseaseDetectionPage: React.FC = () => {
                         </li>
                       ))}
                     </ul>
+                    {(activeTab === 'treatment' ? (result.treatment || []) : (result.prevention || [])).length === 0 && (
+                      <p className="text-sm text-gray-500">No {activeTab} information available.</p>
+                    )}
                   </div>
                 </Card>
 
                 {/* Actions */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 pb-8">
                   <Button variant="primary" className="w-full" id="consult-expert-btn">
                     Consult Expert
                   </Button>
-                  <Button variant="secondary" className="w-full">
-                    Save Report
+                  <Button 
+                    variant="secondary" 
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleSaveReport}
+                    disabled={isSaving}
+                  >
+                    <Save className="w-4 h-4" />
+                    {isSaving ? 'Saving...' : 'Save Report'}
                   </Button>
                 </div>
               </motion.div>
