@@ -90,9 +90,7 @@ You MUST return your response as a raw JSON object with NO markdown formatting, 
 
   try {
     const response = await ai.models.generateContent({
-      // Using gemini-2.5-flash to avoid 503 High Demand errors on other endpoints
-      // (The chat still runs strictly on Gemma 4)
-      model: 'gemini-2.5-flash',
+      model: AI_CONFIG.primaryModel,
       contents: [
         {
           role: 'user', parts: [
