@@ -72,6 +72,7 @@ const Dashboard: React.FC = () => {
   const [realChats, setRealChats] = useState<ChatItem[]>([]);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
+  const [geoCity, setGeoCity] = useState('');
 
   // Helper weather parser functions
   const getConditionText = (code: number) => {
@@ -166,6 +167,19 @@ const Dashboard: React.FC = () => {
           });
           latitude = pos.coords.latitude;
           longitude = pos.coords.longitude;
+
+          // Reverse geocode for city name on Dashboard
+          try {
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+            const geoData = await geoRes.json();
+            const city = geoData.address.city || geoData.address.town || geoData.address.village || '';
+            const state = geoData.address.state || '';
+            if (city) {
+              setGeoCity(state ? `${city}, ${state}` : city);
+            }
+          } catch (e) {
+            console.warn('Dashboard reverse geocode error');
+          }
         } catch (e) {
           console.warn('Dashboard geo fallback to Lucknow');
         }
@@ -242,7 +256,7 @@ const Dashboard: React.FC = () => {
   ];
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Farmer';
-  const displayLocation = [profile?.village, profile?.district, profile?.state].filter(Boolean).join(', ') || t('location.lucknow', 'Lucknow, Uttar Pradesh');
+  const displayLocation = [profile?.village, profile?.district, profile?.state].filter(Boolean).join(', ') || geoCity || t('location.lucknow', 'Lucknow, Uttar Pradesh');
 
   const displayReminders = realReminders.length > 0 ? realReminders : reminders;
   const displayChats = realChats.length > 0 ? realChats : recentConversations;
