@@ -238,7 +238,11 @@
     "analyzing_meteorological": "Analyzing meteorological data to formulate advisory...",
     "hourly_forecast": "Hourly Forecast",
     "7day_forecast": "7-Day Forecast",
-    "location_warning": "Location access is denied. Showing default weather for Lucknow. Enable GPS to get local forecasts."
+    "location_warning": "Location access is denied. Showing default weather for Lucknow. Enable GPS to get local forecasts.",
+    "search_placeholder": "Search city...",
+    "search_btn": "Search",
+    "search_failed": "Failed to find city coordinates",
+    "city_not_found": "City not found. Please try a different name."
   },
   "reminders": {
     "subtitle": "Manage your farming tasks with intelligent notifications",

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
     Wind, Droplets, Eye, Gauge, Sunrise, Sunset,
-    Thermometer, CloudRain, MapPin, RefreshCw, Loader2, Sparkles, Sprout, Info
+    Thermometer, CloudRain, MapPin, RefreshCw, Loader2, Sparkles, Sprout, Info, Search
 } from 'lucide-react';
 import { Card, PageHeader } from '../components/ui/Components';
 import { cn } from '../lib/utils';
@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { SupportedLanguage } from '../api/ai/prompts';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-hot-toast';
 
 interface WeatherData {
     current: {
@@ -38,6 +39,7 @@ export default function WeatherPage() {
     const [locationName, setLocationName] = useState('Fetching location...');
     const [activeDay, setActiveDay] = useState(0);
     const [locationDenied, setLocationDenied] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const hasFetchedHistory = useRef(false);
 
@@ -49,7 +51,7 @@ export default function WeatherPage() {
     };
     const selectedLanguage = getAI_Language(i18n.language);
 
-    const fetchWeather = async () => {
+    const fetchWeather = async (customLat?: number, customLng?: number, customName?: string) => {
         setLoading(true);
         setAdvisoryStream('');
         hasFetchedHistory.current = false;
@@ -59,26 +61,32 @@ export default function WeatherPage() {
         let longitude = 80.9462;
         let finalLocationName = '';
 
-        try {
-            // 1. Get user location
-            const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
-            });
-            latitude = pos.coords.latitude;
-            longitude = pos.coords.longitude;
-
-            // Reverse geocode for city name
+        if (customLat !== undefined && customLng !== undefined) {
+            latitude = customLat;
+            longitude = customLng;
+            finalLocationName = customName || 'Searched Location';
+        } else {
             try {
-                const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-                const geoData = await geoRes.json();
-                finalLocationName = geoData.address.city || geoData.address.town || geoData.address.village || 'Your Farm';
-            } catch (e) {
-                finalLocationName = 'Your Farm';
+                // 1. Get user location
+                const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+                });
+                latitude = pos.coords.latitude;
+                longitude = pos.coords.longitude;
+
+                // Reverse geocode for city name
+                try {
+                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+                    const geoData = await geoRes.json();
+                    finalLocationName = geoData.address.city || geoData.address.town || geoData.address.village || 'Your Farm';
+                } catch (e) {
+                    finalLocationName = 'Your Farm';
+                }
+            } catch (error) {
+                console.warn('Geolocation failed, using Lucknow fallback:', error);
+                setLocationDenied(true);
+                finalLocationName = `Lucknow (${t('location.default_fallback', 'Default')})`;
             }
-        } catch (error) {
-            console.warn('Geolocation failed, using Lucknow fallback:', error);
-            setLocationDenied(true);
-            finalLocationName = `Lucknow (${t('location.default_fallback', 'Default')})`;
         }
 
         setLocationName(finalLocationName);
@@ -188,6 +196,28 @@ Tomorrow's Forecast: ${data.daily[1].high}°C, ${data.daily[1].rain}% chance of 
         }
     };
 
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!searchQuery.trim()) return;
+        setLoading(true);
+        try {
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1`);
+            const geoData = await geoRes.json();
+            if (geoData && geoData.length > 0) {
+                const { lat, lon, display_name } = geoData[0];
+                const cleanName = display_name.split(',')[0];
+                fetchWeather(parseFloat(lat), parseFloat(lon), cleanName);
+            } else {
+                toast.error(t('weather.city_not_found', 'City not found'));
+                setLoading(false);
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error(t('weather.search_failed', 'Search failed'));
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchWeather();
     }, [selectedLanguage]);
@@ -197,13 +227,27 @@ Tomorrow's Forecast: ${data.daily[1].high}°C, ${data.daily[1].rain}% chance of 
             <PageHeader
                 title={t('nav.weather', 'Weather Forecast')}
                 subtitle={t('weather.subtitle', 'Hyperlocal AI farming weather intelligence')}
-                action={
-                    <button onClick={fetchWeather} disabled={loading} className="btn-secondary flex items-center gap-2 text-sm disabled:opacity-50">
-                        <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-                        {t('ui.refresh', 'Refresh')}
-                    </button>
-                }
             />
+
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder={t('weather.search_placeholder', 'Search city...')}
+                        className="flex-1 input-field"
+                    />
+                    <button type="submit" disabled={loading} className="btn-primary flex items-center gap-2 px-5 text-sm">
+                        <Search className="w-4 h-4" />
+                        {t('weather.search_btn', 'Search')}
+                    </button>
+                </form>
+                <button onClick={() => fetchWeather()} disabled={loading} className="btn-secondary flex items-center gap-2 text-sm disabled:opacity-50">
+                    <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                    {t('ui.refresh', 'Refresh')}
+                </button>
+            </div>
 
             <div className="flex items-center gap-2 mb-6 text-sm text-gray-500 dark:text-gray-400">
                 <MapPin className="w-4 h-4 text-primary-500" />

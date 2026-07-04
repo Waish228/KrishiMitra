@@ -52,6 +52,30 @@ export async function* streamChatResponse(
     }
   } catch (error: any) {
     console.error('Error in Gemini API stream:', error);
+
+    const errText = error.message || '';
+    if (errText.includes('429') || errText.includes('quota') || errText.toLowerCase().includes('resource_exhausted')) {
+      let fallbackText = "Hello! I noticed you are asking about farming. Currently, the live Gemini API is experiencing high demand or quota limits.\n\nHere is a general recommendation for your query:\n";
+      
+      const queryLower = newMessage.toLowerCase();
+      if (queryLower.includes('wheat') || queryLower.includes('rust')) {
+        fallbackText += "\n* **Wheat Crop:** Wheat grows best in cool weather. Scout for signs of Rust (yellow/orange powdery spots on leaves). Apply Propiconazole if rust is detected, and ensure timely irrigation at the crown root initiation (CRI) stage.";
+      } else if (queryLower.includes('tomato') || queryLower.includes('water') || queryLower.includes('irrigate')) {
+        fallbackText += "\n* **Tomato Irrigation:** Tomatoes need consistent watering to prevent blossom end rot. Irrigate deeply once a week rather than light daily watering. Avoid spraying water on leaves to prevent blight.";
+      } else if (queryLower.includes('fertilizer') || queryLower.includes('npk') || queryLower.includes('mustard')) {
+        fallbackText += "\n* **Nutrient Management:** For grains/mustard, NPK ratio of 4:2:1 is recommended during sowing. If your crop is at vegetative growth, apply top-dressed Urea (nitrogen) right after irrigation.";
+      } else {
+        fallbackText += "\n* **General Advice:** Always scout fields in the morning. Ensure proper drainage to avoid root rot. Use bio-fertilizers like Neem cake to naturally protect against soil pests.";
+      }
+      
+      const words = fallbackText.split(' ');
+      for (const word of words) {
+        yield word + ' ';
+        await new Promise(r => setTimeout(r, 15));
+      }
+      return;
+    }
+
     yield `**System Error:** The AI model (${AI_CONFIG.primaryModel}) is currently unavailable or returning errors from the Google servers. Please try again later.\n\n_Technical detail: ${error.message}_`;
   }
 }
