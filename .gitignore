@@ -15,6 +15,7 @@ dist-ssr
 # Environment files with secrets
 .env
 .env.*
+!.env.example
 final-checks.md
 
 # Editor directories and files
