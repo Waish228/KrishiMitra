@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Leaf, CloudSun, TrendingUp, Droplets, MessageSquare,
   FlaskConical, BookOpen, Bell, ArrowRight, Sparkles,
-  AlertTriangle, Sun, Wind, MapPin, CalendarDays, CheckCircle2, ChevronRight
+  AlertTriangle, Sun, Wind, MapPin, CalendarDays, CheckCircle2, ChevronRight, Loader2
 } from 'lucide-react';
 import { Card, Badge } from '../components/ui/Components';
 import { getGreeting } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 interface QuickActionItem {
   icon: React.ReactNode;
@@ -63,6 +66,138 @@ interface ChatItem {
 
 const Dashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { user, profile } = useAuth();
+
+  const [realReminders, setRealReminders] = useState<ReminderItem[]>([]);
+  const [realChats, setRealChats] = useState<ChatItem[]>([]);
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+
+  // Helper weather parser functions
+  const getConditionText = (code: number) => {
+    if (code === 0) return t('weather.clear', 'Clear');
+    if (code <= 3) return t('weather.partly_cloudy', 'Partly Cloudy');
+    if (code <= 39) return t('weather.cloudy', 'Cloudy');
+    if (code <= 49) return t('weather.foggy', 'Foggy');
+    if (code <= 69) return t('weather.rain', 'Rain');
+    if (code <= 79) return t('weather.snow', 'Snow');
+    return t('weather.storm', 'Storm');
+  };
+
+  const getConditionIcon = (code: number) => {
+    if (code === 0) return '☀️';
+    if (code <= 3) return '⛅';
+    if (code <= 39) return '☁️';
+    if (code <= 49) return '🌫️';
+    if (code <= 69) return '🌧️';
+    if (code <= 79) return '❄️';
+    return '⛈️';
+  };
+
+  // Fetch real reminders from firestore
+  useEffect(() => {
+    if (!profile?.id) return;
+    const fetchReminders = async () => {
+      try {
+        const q = query(
+          collection(db, 'reminders'),
+          where('user_id', '==', profile.id)
+        );
+        const snap = await getDocs(q);
+        const list: ReminderItem[] = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          list.push({
+            id: doc.id,
+            task: d.title,
+            due: d.due_date ? new Date(d.due_date).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
+            done: d.completed || false
+          });
+        });
+        // Sort locally
+        list.sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+        setRealReminders(list.slice(0, 3));
+      } catch (e) {
+        console.error('Error fetching dashboard reminders', e);
+      }
+    };
+    fetchReminders();
+  }, [profile?.id, i18n.language]);
+
+  // Fetch real recent chats
+  useEffect(() => {
+    if (!user?.uid) return;
+    const fetchChats = async () => {
+      try {
+        const q = query(
+          collection(db, 'conversations'),
+          where('user_id', '==', user.uid)
+        );
+        const snap = await getDocs(q);
+        const list: ChatItem[] = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          list.push({
+            id: doc.id,
+            query: d.title || 'Conversation',
+            time: d.updated_at ? new Date(d.updated_at).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' }) : ''
+          });
+        });
+        // Sort client-side by time
+        list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+        setRealChats(list.slice(0, 2));
+      } catch (e) {
+        console.error('Error fetching dashboard chats', e);
+      }
+    };
+    fetchChats();
+  }, [user?.uid, i18n.language]);
+
+  // Fetch real weather
+  useEffect(() => {
+    const fetchWeather = async () => {
+      setWeatherLoading(true);
+      try {
+        let latitude = 26.8467;
+        let longitude = 80.9462;
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 });
+          });
+          latitude = pos.coords.latitude;
+          longitude = pos.coords.longitude;
+        } catch (e) {
+          console.warn('Dashboard geo fallback to Lucknow');
+        }
+
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max&timezone=auto`
+        );
+        const data = await res.json();
+        
+        const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        setWeatherData({
+          temp: Math.round(data.current.temperature_2m),
+          humidity: data.current.relative_humidity_2m,
+          wind: Math.round(data.current.wind_speed_10m),
+          code: data.current.weather_code,
+          daily: data.daily.time.slice(1, 5).map((time: string, idx: number) => {
+            const d = new Date(time);
+            return {
+              day: days[d.getDay()],
+              code: data.daily.weather_code[idx + 1],
+              temp: Math.round(data.daily.temperature_2m_max[idx + 1])
+            };
+          })
+        });
+      } catch (e) {
+        console.error('Dashboard weather error', e);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+    fetchWeather();
+  }, []);
 
   const quickActions: QuickActionItem[] = [
     { icon: <Leaf className="w-5 h-5" />, labelKey: 'dashboard.scan_crop', defaultLabel: 'Scan Disease', path: '/disease', color: 'bg-rose-500/10 text-rose-500 border border-rose-500/20', hoverColor: 'hover:bg-rose-500/20' },
@@ -106,6 +241,32 @@ const Dashboard: React.FC = () => {
     { id: '2', query: t('chats.query_npk_ratio', 'Best NPK ratio for seed germination'), time: t('time.yesterday', 'Yesterday') },
   ];
 
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Farmer';
+  const displayLocation = [profile?.village, profile?.district, profile?.state].filter(Boolean).join(', ') || t('location.lucknow', 'Lucknow, Uttar Pradesh');
+
+  const displayReminders = realReminders.length > 0 ? realReminders : reminders;
+  const displayChats = realChats.length > 0 ? realChats : recentConversations;
+
+  const displayCrops = useMemo(() => {
+    if (profile?.primary_crops && profile.primary_crops.length > 0) {
+      return profile.primary_crops.slice(0, 3).map((cropName: string, idx: number) => {
+        const cropClean = cropName.trim();
+        const stages = [t('crop_stages.seedling', 'Seedling'), t('crop_stages.flowering', 'Flowering'), t('crop_stages.ripening', 'Ripening')];
+        const healths = [95, 88, 92];
+        const areas = [`${(Number(profile.farm_area_acres) || 3) / 2} ${t('ui.acres', 'acres')}`, `1.0 ${t('ui.acres', 'acres')}`, `2.0 ${t('ui.acres', 'acres')}`];
+        const actions = [t('actions.first_watering', 'First watering due'), t('actions.apply_fungicide', 'Apply fungicide'), t('actions.harvest_12_days', 'Harvest in 12 days')];
+        return {
+          name: t('crops.' + cropClean.toLowerCase(), cropClean),
+          stage: stages[idx % 3],
+          health: healths[idx % 3],
+          area: areas[idx % 3],
+          nextAction: actions[idx % 3]
+        };
+      });
+    }
+    return recentCrops;
+  }, [profile?.primary_crops, profile?.farm_area_acres, t]);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
@@ -127,10 +288,10 @@ const Dashboard: React.FC = () => {
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
         <div>
           <p className="text-gray-400 dark:text-gray-500 text-xs font-semibold uppercase tracking-wider">{t('dashboard.welcome', 'Welcome back')}</p>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white font-display mt-0.5">Ramesh Singh 👋</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white font-display mt-0.5">{displayName} 👋</h1>
           <div className="flex items-center gap-2 mt-1">
             <MapPin className="w-4 h-4 text-primary-500" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('location.lucknow', 'Lucknow, Uttar Pradesh')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{displayLocation}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-800/50 p-2 rounded-xl border border-gray-100 dark:border-slate-800">
@@ -153,39 +314,61 @@ const Dashboard: React.FC = () => {
           {/* Today's Weather & Quick Actions Combo Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            {/* Weather Widget */}
             <motion.div variants={itemVariants}>
               <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-800 text-white rounded-3xl p-6 shadow-md h-full flex flex-col justify-between min-h-[220px]">
                 <div className="absolute top-[-20%] right-[-10%] w-36 h-36 rounded-full bg-yellow-400/20 blur-xl"></div>
                 
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-xs font-semibold bg-white/20 px-2.5 py-1 rounded-full uppercase tracking-wider text-white">{t('dashboard.weather_today', 'Weather Today')}</span>
-                    <h3 className="text-sm text-white/80 mt-2 font-medium">{t('weather.partly_cloudy', 'Partly Cloudy')}</h3>
+                {weatherLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-white/80" />
                   </div>
-                  <span className="text-4xl">⛅</span>
-                </div>
-
-                <div className="mt-4">
-                  <div className="flex items-baseline">
-                    <span className="text-5xl font-extrabold font-display">28°</span>
-                    <span className="text-xl ml-1">C</span>
-                  </div>
-                  <div className="flex gap-4 mt-3 text-xs text-white/70">
-                    <div className="flex items-center gap-1"><Wind className="w-3.5 h-3.5" /> 12 {t('ui.kmh', 'km/h')}</div>
-                    <div className="flex items-center gap-1"><Droplets className="w-3.5 h-3.5" /> 68%</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 mt-4 pt-3 border-t border-white/10">
-                  {['Mon', 'Tue', 'Wed', 'Thu'].map((day, i) => (
-                    <div key={day} className="text-center">
-                      <p className="text-[10px] text-white/50">{t(`days.${day.toLowerCase()}`, day)}</p>
-                      <p className="text-sm my-0.5">{['⛅', '☁️', '🌧️', '☀️'][i]}</p>
-                      <p className="text-xs font-bold text-white">{[28, 26, 24, 31][i]}°</p>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-xs font-semibold bg-white/20 px-2.5 py-1 rounded-full uppercase tracking-wider text-white">{t('dashboard.weather_today', 'Weather Today')}</span>
+                        <h3 className="text-sm text-white/80 mt-2 font-medium">
+                          {weatherData ? getConditionText(weatherData.code) : t('weather.partly_cloudy', 'Partly Cloudy')}
+                        </h3>
+                      </div>
+                      <span className="text-4xl">
+                        {weatherData ? getConditionIcon(weatherData.code) : '⛅'}
+                      </span>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="mt-4">
+                      <div className="flex items-baseline">
+                        <span className="text-5xl font-extrabold font-display">
+                          {weatherData ? weatherData.temp : 28}°
+                        </span>
+                        <span className="text-xl ml-1">C</span>
+                      </div>
+                      <div className="flex gap-4 mt-3 text-xs text-white/70">
+                        <div className="flex items-center gap-1">
+                          <Wind className="w-3.5 h-3.5" /> {weatherData ? weatherData.wind : 12} {t('ui.kmh', 'km/h')}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Droplets className="w-3.5 h-3.5" /> {weatherData ? weatherData.humidity : 68}%
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2 mt-4 pt-3 border-t border-white/10">
+                      {(weatherData?.daily || [
+                        { day: 'mon', code: 2, temp: 28 },
+                        { day: 'tue', code: 3, temp: 26 },
+                        { day: 'wed', code: 61, temp: 24 },
+                        { day: 'thu', code: 0, temp: 31 }
+                      ]).map((item: any, i: number) => (
+                        <div key={i} className="text-center">
+                          <p className="text-[10px] text-white/50">{t(`days.${item.day}`, item.day)}</p>
+                          <p className="text-sm my-0.5">{getConditionIcon(item.code)}</p>
+                          <p className="text-xs font-bold text-white">{item.temp}°</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
 
@@ -226,7 +409,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recentCrops.map((crop) => (
+                {displayCrops.map((crop) => (
                   <div key={crop.name} className="p-4 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between">
@@ -336,7 +519,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div className="space-y-2.5">
-                {reminders.map((rem) => (
+                {displayReminders.map((rem) => (
                   <div key={rem.id} className="flex items-start gap-3 p-3 bg-gray-50/50 dark:bg-slate-800/30 rounded-xl border border-gray-100 dark:border-slate-800/50">
                     <button className="mt-0.5">
                       <CheckCircle2 className={`w-4 h-4 ${rem.done ? 'text-emerald-500 fill-emerald-500/10' : 'text-gray-300 dark:text-slate-600'}`} />
@@ -365,7 +548,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div className="space-y-2.5">
-                {recentConversations.map((chat) => (
+                {displayChats.map((chat) => (
                   <Link key={chat.id} to="/chat" className="block p-3 rounded-xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-100 dark:hover:bg-slate-800 transition">
                     <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{chat.query}</p>
                     <p className="text-[10px] text-gray-400 mt-1">{chat.time}</p>
