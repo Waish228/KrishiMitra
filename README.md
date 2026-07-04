@@ -1,8 +1,7 @@
-# KrishiMitra AI - Smart Farming Companion
-
-<p align="center">
-  <img src="https://krishimitra-50ce5.web.app/favicon.svg" width="80" alt="KrishiMitra Brand Logo" />
-</p>
+<h1 align="left" style="display: flex; align-items: center; justify-content: center; gap: 12px;"><img src="https://krishimitra-50ce5.web.app/favicon.svg" width="40" height="40" alt="KrishiMitra Brand Logo" />
+  KrishiMitra AI - Smart Farming Companion
+  
+</h1>
 
 > **Empowering Farmers with Voice-Driven Multilingual AI Intelligence**
 > 
