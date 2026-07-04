@@ -41,6 +41,7 @@ export default function AIChatPage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
+    const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
     const [input, setInput] = useState('');
 
     const [isTyping, setIsTyping] = useState(false);
@@ -104,6 +105,24 @@ export default function AIChatPage() {
     }, [isListening, transcript]);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success('Message copied to clipboard', {
+            style: {
+                background: '#333',
+                color: '#fff',
+                fontSize: '14px'
+            },
+            icon: '📋'
+        });
+    };
+
+    const handleFeedback = (messageId: string, type: 'up' | 'down') => {
+        setMessageFeedback(prev => ({ ...prev, [messageId]: type }));
+        if (type === 'up') toast.success('Thanks for the positive feedback!', { icon: '👍' });
+        else toast.success('Thanks for the feedback, we will improve.', { icon: '📝' });
+    };
+
     async function loadConversations() {
         if (!user) return;
         try {
@@ -161,7 +180,10 @@ export default function AIChatPage() {
                 content: messageText,
             };
             const savedUserMsg = await addMessage(userMsg);
-            setMessages(prev => [...prev, savedUserMsg]);
+            setMessages(prev => {
+                if (prev.some(m => m.id === savedUserMsg.id)) return prev;
+                return [...prev, savedUserMsg];
+            });
 
             // Stream AI response
             const stream = streamChatResponse(messages, messageText, selectedLanguage);
@@ -179,7 +201,10 @@ export default function AIChatPage() {
                 content: fullResponse,
             };
             const savedAssistantMsg = await addMessage(assistantMsg);
-            setMessages(prev => [...prev, savedAssistantMsg]);
+            setMessages(prev => {
+                if (prev.some(m => m.id === savedAssistantMsg.id)) return prev;
+                return [...prev, savedAssistantMsg];
+            });
 
             // ── Auto-speak if voice mode is on ──────────────────────────────────
             if (voiceModeRef.current && fullResponse) {
@@ -479,29 +504,47 @@ export default function AIChatPage() {
 
                                         {/* Action buttons (assistant only) */}
                                         {message.role === 'assistant' && (
-                                            <div className="flex items-center gap-1 px-1">
+                                            <div className="flex items-center gap-1 px-1 relative z-50 pointer-events-auto">
                                                 <button
-                                                    onClick={() => navigator.clipboard.writeText(message.content)}
-                                                    className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                                    onClick={() => { console.log('Copy clicked'); handleCopy(message.content); }}
+                                                    className="p-2 rounded hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-all cursor-pointer"
                                                     title="Copy"
                                                 >
-                                                    <Copy className="w-3 h-3" />
+                                                    <Copy className="w-4 h-4" />
                                                 </button>
                                                 {/* Re-read button (only if TTS supported) */}
                                                 {ttsSupported && (
                                                     <button
-                                                        onClick={() => speak(message.content, selectedLanguage)}
-                                                        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-primary-500 transition-colors"
+                                                        onClick={() => { console.log('Readout clicked'); speak(message.content, selectedLanguage); }}
+                                                        className="p-2 rounded hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-400 hover:text-primary-500 transition-all cursor-pointer"
                                                         title="Read aloud"
                                                     >
-                                                        <Volume2 className="w-3 h-3" />
+                                                        <Volume2 className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-green-500 transition-colors">
-                                                    <ThumbsUp className="w-3 h-3" />
+                                                <button 
+                                                    onClick={() => { console.log('ThumbsUp clicked'); handleFeedback(message.id, 'up'); }}
+                                                    className={cn(
+                                                        "p-2 rounded transition-all cursor-pointer",
+                                                        messageFeedback[message.id] === 'up' 
+                                                            ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                                                            : "hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-400 hover:text-green-500"
+                                                    )}
+                                                    title="Helpful"
+                                                >
+                                                    <ThumbsUp className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-red-500 transition-colors">
-                                                    <ThumbsDown className="w-3 h-3" />
+                                                <button 
+                                                    onClick={() => { console.log('ThumbsDown clicked'); handleFeedback(message.id, 'down'); }}
+                                                    className={cn(
+                                                        "p-2 rounded transition-all cursor-pointer",
+                                                        messageFeedback[message.id] === 'down' 
+                                                            ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                                                            : "hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-400 hover:text-red-500"
+                                                    )}
+                                                    title="Not Helpful"
+                                                >
+                                                    <ThumbsDown className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         )}

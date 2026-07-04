@@ -30,7 +30,9 @@ export async function* streamChatResponse(
   });
 
   try {
-    const responseStream = await ai.models.generateContentStream({
+    // Note: Using generateContent instead of generateContentStream here because
+    // gemma-4-26b-a4b-it seems to be throwing 500 Internal Errors on the streaming endpoint.
+    const response = await ai.models.generateContent({
       model: AI_CONFIG.primaryModel,
       contents: contents,
       config: {
@@ -39,14 +41,18 @@ export async function* streamChatResponse(
       }
     });
 
-    for await (const chunk of responseStream) {
-      if (chunk.text) {
-        yield chunk.text;
+    if (response.text) {
+      // Yield individual words because the UI accumulates them
+      const words = response.text.split(' ');
+      for (const word of words) {
+        yield word + ' ';
+        // Small delay to simulate typing
+        await new Promise(r => setTimeout(r, 10));
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in Gemini API stream:', error);
-    yield "\n\n**Error:** I'm sorry, but I am unable to connect to my AI systems right now. Please try again later.";
+    yield `**System Error:** The AI model (${AI_CONFIG.primaryModel}) is currently unavailable or returning errors from the Google servers. Please try again later.\n\n_Technical detail: ${error.message}_`;
   }
 }
 

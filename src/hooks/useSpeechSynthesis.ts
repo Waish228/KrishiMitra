@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { SupportedLanguage } from '../api/ai/prompts';
+import { toast } from 'react-hot-toast';
 
 // BCP-47 language codes for TTS voice matching
 // Multiple fallbacks per language in priority order
@@ -15,20 +16,25 @@ function findBestVoice(language: SupportedLanguage): SpeechSynthesisVoice | null
   const voices = window.speechSynthesis.getVoices();
   if (voices.length === 0) return null;
 
-  const codes = LANGUAGE_VOICE_CODES[language];
+  const codes = LANGUAGE_VOICE_CODES[language] || LANGUAGE_VOICE_CODES['English'];
 
   // Try exact match first (e.g. hi-IN)
   for (const code of codes) {
-    const exact = voices.find(v => v.lang === code);
+    const exact = voices.find(v => v.lang.toLowerCase() === code.toLowerCase());
     if (exact) return exact;
   }
 
   // Try prefix match (e.g. "hi" matches "hi-IN")
   for (const code of codes) {
-    const prefix = code.split('-')[0];
-    const match = voices.find(v => v.lang.startsWith(prefix));
+    const prefix = code.split('-')[0].toLowerCase();
+    const match = voices.find(v => v.lang.toLowerCase().startsWith(prefix));
     if (match) return match;
   }
+  
+  // Try matching the language name itself in the voice name (e.g. "Hindi" inside "Microsoft Swara - Hindi")
+  const langName = language.toLowerCase();
+  const nameMatch = voices.find(v => v.name.toLowerCase().includes(langName));
+  if (nameMatch) return nameMatch;
 
   // Absolute fallback — first available voice
   return voices[0];
@@ -47,7 +53,7 @@ function stripMarkdown(text: string): string {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → link text only
     .replace(/^[-*+]\s+/gm, '')           // list bullet chars
     .replace(/^\d+\.\s+/gm, '')          // numbered list prefixes
-    .replace(/[>#_~|]/g, '')              // remaining special chars
+    .replace(/[>#_~|*`"-]/g, '')         // remaining special chars including asterisks and quotes
     .replace(/\n{2,}/g, '. ')            // paragraph breaks → short pause
     .replace(/\n/g, ' ')                  // single newlines → space
     .replace(/\s{2,}/g, ' ')             // collapse whitespace
@@ -64,6 +70,7 @@ export interface UseSpeechSynthesisReturn {
 export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const onEndRef = useRef<(() => void) | undefined>(undefined);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const isSupported =
     typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -92,58 +99,65 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
       onEndRef.current = onEnd;
 
       const doSpeak = () => {
+        console.log('TTS starting with text:', cleanText);
         const utterance = new SpeechSynthesisUtterance(cleanText);
         const voice = findBestVoice(language);
-        if (voice) utterance.voice = voice;
+        if (voice) {
+          utterance.voice = voice;
+          console.log('TTS selected voice:', voice.name, voice.lang);
+        } else {
+          console.log('TTS could not find a specific voice, using default browser voice.');
+        }
 
-        utterance.lang   = LANGUAGE_VOICE_CODES[language][0];
-        utterance.rate   = 0.92;  // slightly slower for clarity
-        utterance.pitch  = 1.05;
+        utterance.lang   = LANGUAGE_VOICE_CODES[language]?.[0] || 'en-US';
+        utterance.rate   = 1.0;
+        utterance.pitch  = 1.0;
         utterance.volume = 1.0;
 
-        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onstart = () => {
+          console.log('TTS utterance started');
+          toast.success('Reading aloud...', { id: 'tts-toast', duration: 2000, position: 'bottom-center' });
+          setIsSpeaking(true);
+        };
 
         utterance.onend = () => {
+          console.log('TTS utterance ended');
           setIsSpeaking(false);
           onEndRef.current?.();
           onEndRef.current = undefined;
+          utteranceRef.current = null;
         };
 
         utterance.onerror = (e) => {
-          // "interrupted" is normal when user triggers stop() mid-sentence
-          if (e.error !== 'interrupted') {
-            console.warn('TTS error:', e.error);
-          }
+          console.error('TTS error event:', e.error, e);
+          toast.error(`Browser voice error: ${e.error}`, { id: 'tts-toast', duration: 4000 });
           setIsSpeaking(false);
           onEndRef.current = undefined;
+          utteranceRef.current = null;
         };
 
-        window.speechSynthesis.speak(utterance);
+        utteranceRef.current = utterance;
+        
+        try {
+            window.speechSynthesis.speak(utterance);
+        } catch (err: any) {
+            toast.error(`Speech failed: ${err.message}`, { id: 'tts-toast' });
+        }
       };
 
-      // Voices may not be ready yet on first load
+      // In Chrome, if voices are empty, they might load later, but we shouldn't completely block speech
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
         doSpeak();
       } else {
+        console.log('TTS voices not loaded yet, attaching voiceschanged listener and trying anyway...');
         window.speechSynthesis.addEventListener('voiceschanged', doSpeak, { once: true });
+        // Fallback: Try speaking anyway just in case the browser supports it without explicitly loading the voice list
+        doSpeak();
       }
     },
     [isSupported]
   );
-
-  // Safari / some Chromium builds have a bug where synthesis pauses after ~15s.
-  // This keep-alive workaround resumes it periodically while speaking.
-  useEffect(() => {
-    if (!isSupported) return;
-    const interval = setInterval(() => {
-      if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-        window.speechSynthesis.pause();
-        window.speechSynthesis.resume();
-      }
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [isSupported]);
 
   // Cancel speech when component unmounts
   useEffect(() => {
