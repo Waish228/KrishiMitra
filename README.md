@@ -483,9 +483,28 @@ This project is already pre-configured for deployment with Firebase Hosting.
 
 ## 👥 Team
 
-*   **Waish Alam** - Lead Full Stack Developer & AI Integrator
-    *   *Contribution*: Built the entire React application, integrated Firebase database services, configured Gemma 4 client hooks, and built speech voice processing components.
+👨‍💻 Aman Mondal – Frontend Developer
 
+Contribution:
+
+Developed the frontend of the application using React, TypeScript, and Tailwind CSS.
+Integrated APIs with the frontend to enable AI-powered features.
+Performed debugging, UI improvements, and feature testing to ensure a smooth user experience.
+
+⚙️ Waish Alam – Backend & AI Integration Developer
+
+Contribution:
+
+Developed the backend infrastructure using Firebase.
+Integrated Gemma 4 into the application for conversational AI and intelligent recommendations.
+Managed backend services, data flow, and AI functionality.
+
+📝 Anushka Verma – Documentation & Presentation
+
+Contribution:
+
+Prepared the Kaggle Writeup, including the technical documentation and project description.
+Created the project demo video and presentation showcasing the application's features and workflow.
 ---
 
 ## 📄 License
