@@ -30,7 +30,7 @@
 *   📂 **GitHub Repository**: [https://github.com/Waish228/KrishiMitra](https://github.com/Waish228/KrishiMitra)
 *   🎥 **Demo Video**: [TODO: Insert link to Kaggle presentation/demo video]
 *   📄 **Project Documentation**: [TODO: Link to Project Documentation]
-*   📑 **DOCX Documentation**: [TODO: Link to DOCX file in README_ASSETS/docs/]
+*   📑 **DOCX Documentation**: [project_report.docx](README_ASSETS/docs/project_report.docx)
 *   📊 **Presentation Slides**: [TODO: Link to Presentation PDF/Slides]
 *   💼 **LinkedIn Post**: [TODO: Link to LinkedIn Project Announcement]
 *   🎯 **Kaggle Submission Link**: [TODO: Link to Kaggle Submission Page]
