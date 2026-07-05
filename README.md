@@ -497,30 +497,21 @@ This project is already pre-configured for deployment with Firebase Hosting.
 
 ---
 
-## 👥 Team
+## 👥 Team & Contributions
 
-👨‍💻 Aman Mondal – Frontend Developer
+### 👨‍💻 Aman Mondal — Lead Frontend Engineer
+*   **UI Architecture**: Designed and implemented the core responsive user interface layouts, interactive dashboards, and page routing structures using React 19, TypeScript, and Vite.
+*   **Design System**: Built the application's modern glassmorphism styling system, high-contrast dark mode options, and fluid navigation animations utilizing Tailwind CSS and Framer Motion.
+*   **Client-Side Integration**: Connected visual frontend controls with real-time Open-Meteo forecasts, OpenStreetMap Nominatim reverse-geocoding coordinates, and crop disease upload forms.
 
-Contribution:
+### ⚙️ Waish Alam — Lead Backend & AI Engineer
+*   **AI Engine Orchestration**: Configured Google GenAI SDK connections for the Gemma 4 31B model, and engineered the 10-attempt exponential backoff retry loop wrapper to resolve experimental server faults.
+*   **Conversational Speech Loop**: Implemented the native browser Web Speech API hooks for real-time multilingual Speech-to-Text inputs and Text-to-Speech vocal playbacks in Hindi and Bengali.
+*   **Database & Security**: Provisioned Firebase Authentication systems and Cloud Firestore NoSQL collections, securing database documents with rule configurations.
 
-Developed the frontend of the application using React, TypeScript, and Tailwind CSS.
-Integrated APIs with the frontend to enable AI-powered features.
-Performed debugging, UI improvements, and feature testing to ensure a smooth user experience.
-
-⚙️ Waish Alam – Backend & AI Integration Developer
-
-Contribution:
-
-Developed the backend infrastructure using Firebase.
-Integrated Gemma 4 into the application for conversational AI and intelligent recommendations.
-Managed backend services, data flow, and AI functionality.
-
-📝 Anushka Verma – Documentation & Presentation
-
-Contribution:
-
-Prepared the Kaggle Writeup, including the technical documentation and project description.
-Created the project demo video and presentation showcasing the application's features and workflow.
+### 📝 Anushka Verma — Documentation & Presentation Lead
+*   **Technical Writing**: Compiled the official project writeups, structural descriptions, database diagrams, and system requirements definitions.
+*   **Media Production**: Produced the project presentation slide decks, visual diagrams, and the step-by-step video demonstration showcasing the software workflows.
 ---
 
 ## 📄 License
