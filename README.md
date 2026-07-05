@@ -536,7 +536,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## ✉️ Project Lead Contact
+## ✉️ Project Contact
 
 *   **Email**: waishalam228@gmail.com
 *   **GitHub**: [https://github.com/Waish228](https://github.com/Waish228)
