@@ -473,9 +473,27 @@ This project is already pre-configured for deployment with Firebase Hosting.
 
 ## 🔮 Future Scope
 
-*   **Agmarknet Mandi API Integration**: Transition from simulated commodity prices to live district mandi prices.
-*   **Offline Support (Service Workers)**: Enable crop guides and planning calendars to render without active internet connections.
-*   **Regional Languages**: Expand support to other regional dialects such as Marathi, Odia, and Tamil.
+### 📊 Data & Intelligence
+*   **IoT Soil Sensors**: Integrate low-cost soil moisture/humidity sensors so irrigation advice uses real field data instead of manual inputs.
+*   **Yield Prediction**: Introduce ML models combining historical yield, weather, and soil data to forecast harvest output per crop.
+*   **Satellite & Drone Crop Monitoring**: NDVI-based health imagery for larger farms, complementing the phone-camera disease scanner.
+*   **Soil Health Card Integration**: Pull real soil test data from India's government Soil Health Card database into the Crop Guide.
+
+### 📶 Access & Reach
+*   **WhatsApp & SMS Bot**: Bring the AI assistant to feature phones via WhatsApp Business API or SMS, for farmers without a smartphone.
+*   **Offline-First Mode**: Support Service Workers so crop guides and planners work without active internet connections.
+*   **More Regional Languages**: Expand support to other regional dialects such as Marathi, Odia, Tamil, Punjabi, and Telugu.
+
+### 💰 Money & Market
+*   **Live Mandi Prices via Agmarknet**: Replace simulated pricing data with real, live district-level rates from Agmarknet API.
+*   **Direct-to-Buyer Marketplace**: Connect farmers directly with local buyers and FPOs to cut out middlemen.
+*   **Govt. Scheme & Subsidy Advisor**: Gemma-powered eligibility checks for PM-KISAN, crop insurance (PMFBY), and state subsidies.
+*   **Micro-finance/Loan Advisory**: Surface relevant agricultural loan products based on farm size and crop cycle.
+
+### 🤝 Community & Engagement
+*   **Peer Farmer Forum**: Regional community Q&A, moderated with Gemma for spam/misinformation filtering.
+*   **Proactive Alert System**: Crowd-sourced pest/disease outbreak warnings pushed to nearby farmers automatically.
+*   **FPO & Enterprise Dashboard**: An aggregate view for Farmer Producer Organizations managing many member farmers at once.
 
 ---
 
