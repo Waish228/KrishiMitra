@@ -466,8 +466,11 @@ This project is already pre-configured for deployment with Firebase Hosting.
 ## ⚠️ Challenges Faced
 
 1.  **Quota Exhaustion (Gemini API 429)**: The free-tier API has strict daily request limits. We resolved this by building a smart query-matching local fallback system inside [client.ts](file:///d:/OLD%20PC/Program/KishanSathi/src/api/ai/client.ts) that intercepts rate-limit errors and responds with custom offline recommendations.
-2.  **Transient Server 500 Errors**: Experimental models like Gemma 4 occasionally return internal server failures. We solved this by implementing a **10-attempt exponential backoff retry loop** for all API client queries.
-3.  **TypeScript Web Speech Typings**: The browser `SpeechRecognition` classes trigger compiler warnings due to missing built-in types. We resolved this by creating global type overrides at the top of the hook.
+2.  **Transient Server 500 Errors on Beta Models**: Swapping backend models to the denser `gemma-4-31b-it` on beta endpoints occasionally triggered internal server failures (HTTP 500). We solved this by implementing a centralized **10-attempt exponential backoff retry loop** for all API client queries.
+3.  **Speech Synthesis Queue Clogging**: Rapid audio triggers and prompt toggles clogged the browser's speech synthesis queues, causing silent failures. We solved this by adding cancellation rules (`window.speechSynthesis.cancel()`) and an automatic **10-attempt voice trigger retry loop** with debouncing.
+4.  **TypeScript Web Speech Typings**: The browser `SpeechRecognition` classes trigger compiler warnings due to missing built-in types on global window objects. We resolved this by declaring explicit global type overrides (`webkitSpeechRecognition` interfaces) at the top of the hook.
+5.  **User State Hydration & Authentication Redirects**: Integrating Firebase Authentication with Firestore profile queries led to page refresh crashes. We resolved this by building a customized React Auth Context that tracks hydration state before letting routes evaluate.
+6.  **Browser Geolocation Blocks & Cache Invalidation**: Restrictive sandbox permissions blocked coordinates access. We implemented fallback location overrides (defaulting to Lucknow) and integrated OSM reverse-geocoding coordinates translations.
 
 ---
 
