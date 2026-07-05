@@ -307,9 +307,6 @@ Open **[http://localhost:5173](http://localhost:5173)** in your browser!
 | `VITE_GEMINI_API_KEY` | Google GenAI API key (enables Gemma 4 queries) |
 | `VITE_WEATHER_API_KEY` | API Key for meteorological databases |
 
-> [!CAUTION]
-> Never commit actual API keys or `.env.local` files to public repositories.
-
 ---
 
 ## 🚀 Local Development Guide
