@@ -32,7 +32,7 @@
 *   📄 **Project Documentation**: [TODO: Link to Project Documentation]
 *   📑 **DOCX Documentation**: [project_report.docx](README_ASSETS/docs/project_report.docx)
 *   📊 **Presentation Slides**: [TODO: Link to Presentation PDF/Slides]
-*   🎯 **Kaggle Submission Link**: [TODO: Link to Kaggle Submission Page]
+*   🎯 **Kaggle Competition**: [Build with Gemma Kolkata](https://www.kaggle.com/competitions/build-with-gemma-kolkata)
 
 ---
 
@@ -530,13 +530,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎯 Hackathon Submission Details
 
-*   **Hackathon Theme**: *Build with Gemma Kolkata Hackathon*
+*   **Hackathon Theme**: [Build with Gemma Kolkata](https://www.kaggle.com/competitions/build-with-gemma-kolkata)
 *   **Core Innovation**: Combining Gemma 4 text capabilities with browser audio APIs to build a voice-to-voice assistant that works seamlessly in Hindi and Bengali.
 *   **Impact**: Simplifies access to advanced agricultural data, weather calendars, and disease diagnostics for thousands of regional Indian farmers.
 
 ---
 
-## ✉️ Contact
+## ✉️ Project Lead Contact
 
 *   **Email**: waishalam228@gmail.com
 *   **GitHub**: [https://github.com/Waish228](https://github.com/Waish228)
