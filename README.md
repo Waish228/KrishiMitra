@@ -293,7 +293,7 @@ service cloud.firestore {
 ```bash
 npm run dev
 ```
-Open **[http://localhost:5173](http://localhost:5173)** in your browser!
+Open the local development URL shown in your terminal (typically **[http://localhost:5173](http://localhost:5173)**) in your browser!
 
 ---
 
