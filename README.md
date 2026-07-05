@@ -32,7 +32,6 @@
 *   📄 **Project Documentation**: [TODO: Link to Project Documentation]
 *   📑 **DOCX Documentation**: [project_report.docx](README_ASSETS/docs/project_report.docx)
 *   📊 **Presentation Slides**: [TODO: Link to Presentation PDF/Slides]
-*   💼 **LinkedIn Post**: [TODO: Link to LinkedIn Project Announcement]
 *   🎯 **Kaggle Submission Link**: [TODO: Link to Kaggle Submission Page]
 
 ---
@@ -532,4 +531,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 *   **Email**: waishalam228@gmail.com
 *   **GitHub**: [https://github.com/Waish228](https://github.com/Waish228)
-*   **LinkedIn**: [TODO: Insert LinkedIn profile URL]
