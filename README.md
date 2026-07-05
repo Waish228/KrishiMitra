@@ -19,7 +19,7 @@
 ## 📸 Hero Image
 
 <div align="center">
-  <img src="README_ASSETS/screenshots/landing.png" width="100%" alt="KrishiMitra Landing Page Banner" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);" />
+  <img src="README_ASSETS/screenshots/thumnail.jpeg" width="100%" alt="KrishiMitra Project Banner" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);" />
 </div>
 
 ---
