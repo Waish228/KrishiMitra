@@ -29,8 +29,7 @@
 *   🌐 **Live Website**: [https://krishimitra-50ce5.web.app](https://krishimitra-50ce5.web.app)
 *   📂 **GitHub Repository**: [https://github.com/Waish228/KrishiMitra](https://github.com/Waish228/KrishiMitra)
 *   🎥 **Demo Video**: [TODO: Insert link to Kaggle presentation/demo video]
-*   📄 **Project Documentation**: [TODO: Link to Project Documentation]
-*   📑 **DOCX Documentation**: [project_report.docx](README_ASSETS/docs/project_report.docx)
+*   📄 **Project Documentation**: [documentation.pdf](README_ASSETS/docs/documentation.pdf)
 *   📊 **Presentation Slides**: [TODO: Link to Presentation PDF/Slides]
 *   🎯 **Kaggle Competition**: [Build with Gemma Kolkata](https://www.kaggle.com/competitions/build-with-gemma-kolkata)
 
